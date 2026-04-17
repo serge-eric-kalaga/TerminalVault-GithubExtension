@@ -1,0 +1,1859 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-{{nonce}}';">
+  <title>Command Keeper</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--vscode-editor-background);
+      color: var(--vscode-editor-foreground);
+      font-family: var(--vscode-font-family, system-ui, sans-serif);
+      font-size: var(--vscode-font-size, 13px);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Utilities ── */
+    .hidden {
+      display: none !important;
+    }
+
+    .flex {
+      display: flex;
+    }
+
+    .flex-col {
+      flex-direction: column;
+    }
+
+    .items-center {
+      align-items: center;
+    }
+
+    .gap-1 {
+      gap: 4px;
+    }
+
+    .gap-2 {
+      gap: 8px;
+    }
+
+    .gap-3 {
+      gap: 12px;
+    }
+
+    .flex-1 {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .truncate {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .mt-1 {
+      margin-top: 4px;
+    }
+
+    .mt-2 {
+      margin-top: 8px;
+    }
+
+    .mt-3 {
+      margin-top: 12px;
+    }
+
+    .text-sm {
+      font-size: 11px;
+    }
+
+    .text-muted {
+      color: var(--vscode-descriptionForeground);
+    }
+
+    .text-error {
+      color: var(--vscode-errorForeground, #f48771);
+    }
+
+    /* ── Inputs ── */
+    input,
+    select,
+    textarea {
+      background: var(--vscode-input-background);
+      color: var(--vscode-input-foreground);
+      border: 1px solid var(--vscode-input-border, transparent);
+      border-radius: 2px;
+      padding: 4px 8px;
+      font-family: inherit;
+      font-size: inherit;
+      outline: none;
+      width: 100%;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--vscode-focusBorder);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: inherit;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+    }
+
+    .btn-primary:hover {
+      background: var(--vscode-button-hoverBackground);
+    }
+
+    .btn-secondary {
+      background: var(--vscode-button-secondaryBackground, #3a3d41);
+      color: var(--vscode-button-secondaryForeground, #ccc);
+    }
+
+    .btn-secondary:hover {
+      background: var(--vscode-button-secondaryHoverBackground, #45494e);
+    }
+
+    .btn-icon {
+      background: transparent;
+      color: var(--vscode-editor-foreground);
+      padding: 3px 5px;
+      border-radius: 2px;
+    }
+
+    .btn-icon:hover {
+      background: var(--vscode-list-hoverBackground);
+    }
+
+    .btn-danger {
+      background: var(--vscode-inputValidation-errorBackground, #5a1d1d);
+      color: #f48771;
+    }
+
+    .btn-danger:hover {
+      filter: brightness(1.15);
+    }
+
+    .btn-sm {
+      padding: 2px 7px;
+      font-size: 11px;
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-block;
+      background: var(--vscode-badge-background);
+      color: var(--vscode-badge-foreground);
+      border-radius: 10px;
+      padding: 1px 6px;
+      font-size: 10px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--vscode-sideBar-background, var(--vscode-editor-background));
+      border: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.2));
+      border-radius: 4px;
+      padding: 10px 12px;
+    }
+
+    /* ── Login screen ── */
+    #login-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      padding: 32px;
+    }
+
+    #login-screen h2 {
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+
+    #login-screen .subtitle {
+      color: var(--vscode-descriptionForeground);
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    #login-screen .mode-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 20px;
+    }
+
+    #login-screen .mode-tab {
+      padding: 4px 14px;
+      border-radius: 2px;
+      cursor: pointer;
+      font-size: 12px;
+      border: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.35));
+      background: transparent;
+      color: var(--vscode-editor-foreground);
+    }
+
+    #login-screen .mode-tab.active {
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      border-color: transparent;
+    }
+
+    #login-form {
+      width: 100%;
+      max-width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #login-form label {
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground);
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    #login-error {
+      color: var(--vscode-errorForeground, #f48771);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .local-info {
+      text-align: center;
+      max-width: 320px;
+      color: var(--vscode-descriptionForeground);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    /* ── Top nav ── */
+    #top-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.2));
+      background: var(--vscode-sideBar-background, var(--vscode-editor-background));
+      flex-shrink: 0;
+    }
+
+    #app-title {
+      font-weight: 600;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    #search-input {
+      max-width: 260px;
+    }
+
+    #nav-tabs {
+      display: flex;
+      gap: 2px;
+      margin-left: 4px;
+    }
+
+    .nav-tab {
+      padding: 3px 10px;
+      border-radius: 2px;
+      cursor: pointer;
+      font-size: 12px;
+      background: transparent;
+      border: none;
+      color: var(--vscode-descriptionForeground);
+      font-family: inherit;
+    }
+
+    .nav-tab.active {
+      background: var(--vscode-list-activeSelectionBackground);
+      color: var(--vscode-list-activeSelectionForeground, #fff);
+    }
+
+    .nav-tab:hover:not(.active) {
+      background: var(--vscode-list-hoverBackground);
+      color: var(--vscode-editor-foreground);
+    }
+
+    #nav-right {
+      display: flex;
+      gap: 4px;
+      margin-left: auto;
+    }
+
+    /* ── Layout ── */
+    #app-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: 180px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.2));
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--vscode-descriptionForeground);
+      border-bottom: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.2));
+    }
+
+    #groups-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 0;
+    }
+
+    .group-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 12px;
+      border-radius: 0;
+    }
+
+    .group-item:hover {
+      background: var(--vscode-list-hoverBackground);
+    }
+
+    .group-item.active {
+      background: var(--vscode-list-activeSelectionBackground);
+      color: var(--vscode-list-activeSelectionForeground, #fff);
+    }
+
+    .group-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .group-count {
+      margin-left: auto;
+      font-size: 10px;
+      color: var(--vscode-descriptionForeground);
+    }
+
+    /* ── Main content ── */
+    #main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #content-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.2));
+    }
+
+    #content-title {
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    #tag-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      padding: 5px 12px;
+      flex-shrink: 0;
+    }
+
+    .tag-chip {
+      padding: 1px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      cursor: pointer;
+      border: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.35));
+      background: transparent;
+      color: var(--vscode-editor-foreground);
+      font-family: inherit;
+    }
+
+    .tag-chip.active {
+      background: var(--vscode-badge-background);
+      color: var(--vscode-badge-foreground);
+      border-color: transparent;
+    }
+
+    #commands-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 12px 16px;
+      background:
+        linear-gradient(180deg,
+          color-mix(in srgb, var(--vscode-editor-background) 92%, transparent),
+          color-mix(in srgb, var(--vscode-sideBar-background, var(--vscode-editor-background)) 32%, transparent));
+    }
+
+    #pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 6px;
+      flex-shrink: 0;
+      font-size: 12px;
+    }
+
+    /* ── Command card ── */
+    .cmd-card {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: stretch;
+      gap: 12px;
+      padding: 12px 12px 12px 16px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--cmd-group-border, color-mix(in srgb, var(--vscode-panel-border, rgba(128, 128, 128, 0.25)) 90%, transparent));
+      background:
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--vscode-sideBar-background, var(--vscode-editor-background)) 88%, transparent),
+          color-mix(in srgb, var(--vscode-editor-background) 96%, transparent));
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+      overflow: hidden;
+      transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+    }
+
+    .cmd-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 4px;
+      background: linear-gradient(180deg,
+        var(--cmd-group-accent, var(--vscode-textLink-foreground, #3794ff)),
+        color-mix(in srgb, var(--cmd-group-accent, var(--vscode-button-background, #0e639c)) 68%, transparent));
+      opacity: 0.85;
+    }
+
+    .cmd-card:hover {
+      transform: translateY(-1px);
+      border-color: color-mix(in srgb, var(--cmd-group-accent, var(--vscode-focusBorder, #3794ff)) 72%, white 8%);
+      background:
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--vscode-list-hoverBackground, transparent) 72%, var(--vscode-sideBar-background, transparent)),
+          color-mix(in srgb, var(--vscode-editor-background) 96%, transparent));
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
+    }
+
+    .cmd-main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .cmd-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .cmd-title-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cmd-text {
+      font-family: var(--vscode-editor-font-family, monospace);
+      font-size: 11px;
+      line-height: 1.55;
+      color: color-mix(in srgb, var(--vscode-editor-foreground) 82%, var(--vscode-descriptionForeground));
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--vscode-input-background, transparent) 82%, transparent);
+      border: 1px solid color-mix(in srgb, var(--vscode-panel-border, rgba(128, 128, 128, 0.18)) 75%, transparent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cmd-code {
+      display: inline;
+    }
+
+    .cmd-token-command {
+      color: #dcdcaa;
+      font-weight: 600;
+    }
+
+    .cmd-token-flag {
+      color: #4fc1ff;
+    }
+
+    .cmd-token-variable {
+      color: #c586c0;
+      font-weight: 600;
+    }
+
+    .cmd-token-string {
+      color: #ce9178;
+    }
+
+    .cmd-token-path {
+      color: #9cdcfe;
+    }
+
+    .cmd-token-danger {
+      color: #f48771;
+      font-weight: 600;
+    }
+
+    .cmd-token-plain {
+      color: inherit;
+    }
+
+    .cmd-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .variable-chip {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      background: color-mix(in srgb, var(--vscode-textLink-foreground, #3794ff) 18%, transparent);
+      color: var(--vscode-textLink-foreground, #3794ff);
+      border: 1px solid color-mix(in srgb, var(--vscode-textLink-foreground, #3794ff) 38%, transparent);
+    }
+
+    .cmd-copy-count {
+      font-size: 10px;
+      letter-spacing: 0.02em;
+      padding: 3px 8px;
+      border-radius: 999px;
+      color: var(--vscode-descriptionForeground);
+      background: color-mix(in srgb, var(--vscode-descriptionForeground) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--vscode-descriptionForeground) 18%, transparent);
+    }
+
+    .cmd-actions {
+      display: grid;
+      grid-auto-flow: column;
+      align-content: start;
+      gap: 6px;
+      flex-shrink: 0;
+      padding-left: 6px;
+      opacity: 0.72;
+      transition: opacity 0.14s ease, transform 0.14s ease;
+    }
+
+    .cmd-card:hover .cmd-actions {
+      opacity: 1;
+      transform: translateX(-1px);
+    }
+
+    .cmd-actions .btn-icon {
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid color-mix(in srgb, var(--vscode-panel-border, rgba(128, 128, 128, 0.2)) 90%, transparent);
+      background: color-mix(in srgb, var(--vscode-sideBar-background, transparent) 72%, transparent);
+      color: var(--vscode-descriptionForeground);
+    }
+
+    .cmd-actions .btn-icon:hover {
+      color: var(--vscode-editor-foreground);
+      border-color: color-mix(in srgb, var(--vscode-focusBorder, #3794ff) 45%, transparent);
+      background: color-mix(in srgb, var(--vscode-list-hoverBackground, transparent) 78%, transparent);
+    }
+
+    .star-icon {
+      color: #f5c518;
+    }
+
+    .cmd-favorite-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: #f5c518;
+      background: color-mix(in srgb, #f5c518 14%, transparent);
+      border: 1px solid color-mix(in srgb, #f5c518 28%, transparent);
+      flex-shrink: 0;
+    }
+
+    /* ── Tabs panels ── */
+    .tab-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #tab-commands {
+      flex-direction: row;
+    }
+
+    /* ── Favorites ── */
+    #tab-favorites {
+      overflow-y: auto;
+      padding: 8px 12px;
+      flex-direction: column;
+    }
+
+    /* ── Stats ── */
+    #tab-stats {
+      overflow-y: auto;
+      padding: 16px;
+      flex-direction: column;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      padding: 12px;
+      border: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.25));
+      border-radius: 4px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground);
+      margin-top: 2px;
+    }
+
+    .top-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .top-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .top-rank {
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground);
+      width: 18px;
+      text-align: right;
+    }
+
+    /* ── Import ── */
+    #tab-import {
+      overflow-y: auto;
+      padding: 16px;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #import-preview {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.25));
+      border-radius: 3px;
+      font-size: 11px;
+    }
+
+    .preview-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 3px 8px;
+      border-bottom: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.1));
+    }
+
+    .preview-row:last-child {
+      border-bottom: none;
+    }
+
+    .preview-status {
+      width: 70px;
+      flex-shrink: 0;
+    }
+
+    .status-new {
+      color: #4ec9b0;
+    }
+
+    .status-duplicate {
+      color: var(--vscode-descriptionForeground);
+    }
+
+    .status-noise {
+      color: var(--vscode-descriptionForeground);
+      opacity: 0.5;
+    }
+
+    /* ── Modal ── */
+    #modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: var(--vscode-editor-background);
+      border: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.4));
+      border-radius: 4px;
+      padding: 18px 20px;
+      width: 100%;
+      max-width: 460px;
+      max-height: 90vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .modal-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field label {
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground);
+    }
+
+    /* ── Variable modal ── */
+    #variable-modal .field {
+      margin-bottom: 8px;
+    }
+
+    #command-variables-builder {
+      border: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.25));
+      border-radius: 3px;
+      padding: 10px;
+      background: color-mix(in srgb, var(--vscode-sideBar-background, transparent) 55%, transparent);
+    }
+
+    #command-variables-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    /* ── Delete confirm ── */
+    #delete-confirm-modal .modal {
+      max-width: 360px;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(128, 128, 128, 0.3);
+      border-radius: 3px;
+    }
+
+    /* ── Loading ── */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(128, 128, 128, 0.3);
+      border-top-color: var(--vscode-button-background);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    #loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ─── Login ─── -->
+  <div id="login-screen">
+    <div style="font-size:28px;margin-bottom:8px">⌨️</div>
+    <h2>Command Keeper</h2>
+    <p class="subtitle">Store & access your terminal commands</p>
+
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="local" data-action="switch-login-mode">Local</button>
+      <button class="mode-tab" data-mode="github-gist" data-action="switch-login-mode">GitHub Gist</button>
+    </div>
+
+    <div id="login-form">
+      <!-- Local mode: no credentials needed -->
+      <div id="login-local" class="local-info">
+        Commands are stored locally in VS Code's global storage.<br>No credentials required.
+      </div>
+
+      <!-- GitHub Gist mode -->
+      <div id="login-gist" class="hidden">
+        <div class="field">
+          <label>GitHub Personal Access Token (gist scope)</label>
+          <input id="pat-input" type="password" placeholder="ghp_…" />
+        </div>
+        <p class="text-sm text-muted mt-1">A private Gist will be created to store your commands. Your token is stored
+          securely in VS Code's secret storage.</p>
+      </div>
+
+      <div id="login-error" class="hidden"></div>
+      <button class="btn btn-primary" data-action="do-login" style="width:100%;justify-content:center">
+        <span id="login-btn-text">Connect</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── Main App ─── -->
+  <div id="main-app" class="hidden" style="display:flex;flex-direction:column;height:100vh">
+
+    <!-- Top nav -->
+    <div id="top-nav">
+      <span id="app-title">⌨️ Command Keeper</span>
+      <input id="search-input" type="search" placeholder="Search commands…"
+        style="max-width:240px" />
+      <div id="nav-tabs">
+        <button class="nav-tab active" data-tab="commands" data-action="switch-tab">Commands</button>
+        <button class="nav-tab" data-tab="favorites" data-action="switch-tab">★ Favorites</button>
+        <button class="nav-tab" data-tab="stats" data-action="switch-tab">Stats</button>
+        <button class="nav-tab" data-tab="import" data-action="switch-tab">Import</button>
+      </div>
+      <div id="nav-right">
+        <button class="btn btn-sm btn-secondary" data-action="refresh-all" title="Refresh">↻</button>
+        <button class="btn btn-sm btn-secondary" data-action="do-logout">Disconnect</button>
+      </div>
+    </div>
+
+    <div id="app-body" style="flex:1;overflow:hidden">
+
+      <!-- ── Tab: Commands ── -->
+      <div id="tab-commands" class="tab-panel">
+
+        <!-- Sidebar -->
+        <div id="sidebar">
+          <div id="sidebar-header">
+            Groups
+            <button class="btn-icon btn-sm" data-action="open-group-modal" title="New group">＋</button>
+          </div>
+          <div id="groups-list">
+            <div class="group-item active" data-id="all" data-action="select-group">
+              <span>📋</span><span class="flex-1 truncate">All</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Commands content -->
+        <div id="main-content">
+          <div id="content-header">
+            <span id="content-title">All Commands</span>
+            <div class="flex gap-2" style="margin-left:auto;align-items:center">
+              <select id="sort-select" style="width:auto;padding:2px 6px;font-size:11px">
+                <option value="recent">Recent</option>
+                <option value="mostCopied">Most copied</option>
+              </select>
+              <button class="btn btn-primary btn-sm" data-action="open-command-modal">＋ Add</button>
+            </div>
+          </div>
+          <div id="tag-filters"></div>
+          <div id="commands-list">
+            <div style="padding:20px;text-align:center;color:var(--vscode-descriptionForeground)">Loading…</div>
+          </div>
+          <div id="pagination"></div>
+        </div>
+      </div>
+
+      <!-- ── Tab: Favorites ── -->
+      <div id="tab-favorites" class="tab-panel hidden">
+        <div id="content-header"
+          style="display:flex;align-items:center;padding:6px 12px;border-bottom:1px solid var(--vscode-panel-border,rgba(128,128,128,0.2))">
+          <span style="font-weight:600">★ Favorites</span>
+        </div>
+        <div id="favorites-list" style="flex:1;overflow-y:auto;padding:4px 8px"></div>
+      </div>
+
+      <!-- ── Tab: Stats ── -->
+      <div id="tab-stats" class="tab-panel hidden">
+        <div style="padding:16px;overflow-y:auto;flex:1">
+          <h3 style="margin-bottom:12px">Dashboard</h3>
+          <div class="stats-grid" id="stats-grid"></div>
+          <h4 style="margin-bottom:8px;font-size:12px">Top Copied Commands</h4>
+          <div class="top-list" id="top-list"></div>
+        </div>
+      </div>
+
+      <!-- ── Tab: Import ── -->
+      <div id="tab-import" class="tab-panel hidden">
+        <div style="padding:16px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:12px">
+          <h3>Import Shell History</h3>
+          <div class="field">
+            <label>Target Group</label>
+            <select id="import-group-select"></select>
+          </div>
+          <div class="field">
+            <label>Shell History (paste content of ~/.bash_history or ~/.zsh_history)</label>
+            <textarea id="import-history-text" style="height:120px;font-family:monospace;font-size:11px"
+              placeholder="Paste your shell history here…"></textarea>
+          </div>
+          <div class="field">
+            <label>Tags to assign (comma-separated, optional)</label>
+            <input id="import-tags-input" placeholder="imported, shell" />
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn-secondary" data-action="preview-import">Preview</button>
+            <button class="btn btn-primary" data-action="do-import" id="import-btn" disabled>Import New Commands</button>
+          </div>
+          <div id="import-summary" class="text-sm text-muted hidden"></div>
+          <div id="import-preview"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── Modals ─── -->
+  <div id="modal-overlay" class="hidden">
+
+    <!-- Group modal -->
+    <div id="group-modal" class="modal hidden">
+      <div class="modal-title" id="group-modal-title">New Group</div>
+      <div class="field"><label>Name *</label><input id="gm-name" placeholder="e.g. Docker" /></div>
+      <div class="field"><label>Description</label><input id="gm-desc" placeholder="Optional description" /></div>
+      <div class="flex gap-2">
+        <div class="field flex-1"><label>Icon (emoji)</label><input id="gm-icon" placeholder="📁" style="width:60px" />
+        </div>
+        <div class="field flex-1"><label>Color</label><input id="gm-color" type="color" value="#3b82f6"
+            style="width:50px;height:28px;padding:1px;cursor:pointer" /></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-action="close-modal">Cancel</button>
+        <button class="btn btn-primary" data-action="save-group">Save</button>
+      </div>
+    </div>
+
+    <!-- Command modal -->
+    <div id="command-modal" class="modal hidden">
+      <div class="modal-title" id="command-modal-title">New Command</div>
+      <div class="field"><label>Group *</label><select id="cm-group"></select></div>
+      <div class="field"><label>Title *</label><input id="cm-title" placeholder="e.g. Deploy to production" /></div>
+      <div class="field"><label>Command *</label><textarea id="cm-command" style="font-family:monospace;font-size:11px"
+          placeholder="e.g. kubectl apply -f deploy.yaml"></textarea></div>
+      <div id="command-variables-builder" class="text-sm text-muted">
+        Use placeholders like <code>{{project}}</code> or <code>{{env}}</code> in the command.
+        <div id="command-variables-list"></div>
+      </div>
+      <div class="field"><label>Description</label><input id="cm-desc" placeholder="Optional description" /></div>
+      <div class="field"><label>Tags (comma-separated)</label><input id="cm-tags" placeholder="docker, deploy" /></div>
+      <div class="flex gap-3 items-center">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
+          <input type="checkbox" id="cm-favorite" /> Favorite
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-action="close-modal">Cancel</button>
+        <button class="btn btn-primary" data-action="save-command">Save</button>
+      </div>
+    </div>
+
+    <!-- Variable substitution modal -->
+    <div id="variable-modal" class="modal hidden">
+      <div class="modal-title">Fill in Variables</div>
+      <p class="text-sm text-muted">Provide the values to generate the final command, or copy the template as-is.</p>
+      <p class="text-sm text-muted" id="var-modal-cmd"
+        style="font-family:monospace;padding:6px 8px;background:var(--vscode-input-background);border-radius:2px"></p>
+      <div id="var-fields"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-action="close-modal">Cancel</button>
+        <button class="btn btn-secondary hidden" id="var-copy-raw-btn" data-action="copy-vars-raw">Copy as-is</button>
+        <button class="btn btn-primary" data-action="confirm-vars">Confirm</button>
+      </div>
+    </div>
+
+    <!-- Delete confirm modal -->
+    <div id="delete-confirm-modal" class="modal hidden" style="max-width:340px">
+      <div class="modal-title">Confirm Delete</div>
+      <p id="delete-confirm-text" class="text-sm"></p>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-action="close-modal">Cancel</button>
+        <button class="btn btn-danger" data-action="confirm-delete">Delete</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script nonce="{{nonce}}">
+
+    console.log('[CommandKeeper] Webview JS loaded');
+    'use strict';
+
+    const vscode = acquireVsCodeApi();
+
+    // ── Message bus ──────────────────────────────────────────────────────────────
+
+    const pendingRequests = new Map();
+
+    function apiCall(method, path, body) {
+      return new Promise((resolve, reject) => {
+        const id = Math.random().toString(36).slice(2);
+        pendingRequests.set(id, { resolve, reject });
+        vscode.postMessage({ type: 'apiRequest', id, method, path, body });
+      });
+    }
+
+    window.addEventListener('message', e => {
+      const msg = e.data;
+      if (msg.type === 'apiResponse') {
+        const p = pendingRequests.get(msg.id);
+        if (!p) return;
+        pendingRequests.delete(msg.id);
+        if (msg.error) p.reject(new Error(msg.error));
+        else p.resolve(msg.data);
+      } else if (msg.type === 'authState') {
+        onAuthState(msg.isAuthenticated, msg.storageMode);
+      } else if (msg.type === 'loginResult') {
+        onLoginResult(msg.success, msg.error);
+      }
+    });
+
+    // ── State ────────────────────────────────────────────────────────────────────
+
+    let state = {
+      storageMode: 'local',
+      groups: [],
+      selectedGroupId: 'all',
+      commands: [],
+      total: 0,
+      offset: 0,
+      limit: 30,
+      tags: [],
+      activeTags: [],
+      searchQuery: '',
+      sort: 'recent',
+      editingGroup: null,
+      editingCommand: null,
+      deleteTarget: null,
+      varTarget: null,
+      varResolveCallback: null,
+      varResolveMode: 'apply',
+      importPreviewData: null,
+    };
+
+    // ── Auth ─────────────────────────────────────────────────────────────────────
+
+    function onAuthState(isAuthenticated, storageMode) {
+      state.storageMode = storageMode || 'local';
+      if (isAuthenticated || storageMode === 'local') {
+        show('main-app');
+        hide('login-screen');
+        refreshAll();
+      } else {
+        show('login-screen');
+        hide('main-app');
+        syncLoginModeUI(storageMode);
+      }
+    }
+
+    let currentLoginMode = 'local';
+    function switchLoginMode(mode) {
+      currentLoginMode = mode;
+      document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+      show('login-local', mode === 'local');
+      show('login-gist', mode === 'github-gist');
+      hide('login-error');
+      document.getElementById('login-btn-text').textContent = mode === 'local' ? 'Start' : 'Connect';
+    }
+
+    function syncLoginModeUI(storageMode) {
+      if (storageMode) switchLoginMode(storageMode);
+    }
+
+    function doLogin() {
+      hide('login-error');
+      const mode = currentLoginMode;
+      if (mode === 'local') {
+        vscode.postMessage({ type: 'login' });
+        return;
+      }
+      if (mode === 'github-gist') {
+        const pat = val('pat-input');
+        if (!pat) { showLoginError('Personal Access Token is required'); return; }
+        vscode.postMessage({ type: 'login', pat });
+      }
+      document.getElementById('login-btn-text').textContent = 'Connecting…';
+    }
+
+    function onLoginResult(success, error) {
+      document.getElementById('login-btn-text').textContent = currentLoginMode === 'local' ? 'Start' : 'Connect';
+      if (!success) showLoginError(error || 'Connection failed');
+    }
+
+    function showLoginError(msg) {
+      const el = document.getElementById('login-error');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    function doLogout() { vscode.postMessage({ type: 'logout' }); }
+
+    // ── Navigation ───────────────────────────────────────────────────────────────
+
+    function switchTab(tab) {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+      document.getElementById('tab-' + tab).classList.remove('hidden');
+      if (tab === 'favorites') loadFavorites();
+      if (tab === 'stats') loadStats();
+      if (tab === 'import') loadImportGroups();
+    }
+
+    // ── Groups ───────────────────────────────────────────────────────────────────
+
+    async function loadGroups() {
+      try {
+        state.groups = await apiCall('GET', '/groups');
+        renderGroups();
+      } catch (e) { notify(e.message, 'error'); }
+    }
+
+    function renderGroups() {
+      const list = document.getElementById('groups-list');
+      const all = `<div class="group-item ${state.selectedGroupId === 'all' ? 'active' : ''}" data-id="all" data-action="select-group"><span>📋</span><span class="flex-1 truncate">All</span></div>`;
+      const items = state.groups.map(g => {
+        const active = state.selectedGroupId == g.id;
+        return `<div class="group-item ${active ? 'active' : ''}" data-id="${g.id}" data-action="select-group" data-group-id="${g.id}">
+            <span class="group-dot" style="background:${g.color || '#3b82f6'}"></span>
+            <span class="flex-1 truncate" title="${esc(g.name)}">${esc(g.icon || '')} ${esc(g.name)}</span>
+            <span class="group-count">${groupCount(g.id)}</span>
+        </div>`;
+      }).join('');
+      list.innerHTML = all + items;
+    }
+
+    function groupCount(gid) {
+      return state.commands.filter(c => c.group_id == gid).length || '';
+    }
+
+    function selectGroup(id) {
+      state.selectedGroupId = id;
+      state.offset = 0;
+      state.activeTags = [];
+      renderGroups();
+      const group = state.groups.find(g => g.id == id);
+      document.getElementById('content-title').textContent = id === 'all' ? 'All Commands' : (group ? `${group.icon || '📁'} ${group.name}` : 'Commands');
+      loadCommands();
+    }
+
+    function groupContextMenu(evt, id) {
+      const g = state.groups.find(g => g.id == id);
+      if (!g) return;
+      // Simple right-click → edit
+      openGroupModal(g);
+    }
+
+    function openGroupModal(group) {
+      state.editingGroup = group || null;
+      document.getElementById('group-modal-title').textContent = group ? 'Edit Group' : 'New Group';
+      document.getElementById('gm-name').value = group?.name || '';
+      document.getElementById('gm-desc').value = group?.description || '';
+      document.getElementById('gm-icon').value = group?.icon || '📁';
+      document.getElementById('gm-color').value = group?.color || '#3b82f6';
+      showModal('group-modal');
+    }
+
+    async function saveGroup() {
+      const name = val('gm-name').trim();
+      if (!name) { alert('Name is required'); return; }
+      const data = { name, description: val('gm-desc') || null, icon: val('gm-icon') || '📁', color: document.getElementById('gm-color').value };
+      try {
+        if (state.editingGroup) {
+          await apiCall('PATCH', `/groups/${state.editingGroup.id}`, data);
+        } else {
+          await apiCall('POST', '/groups', data);
+        }
+        closeModal();
+        await refreshAll();
+      } catch (e) { notify(e.message, 'error'); }
+    }
+
+    async function deleteGroup(id) {
+      const g = state.groups.find(x => x.id == id);
+      showDeleteConfirm(`Delete group "${g?.name}"? All its commands will also be deleted.`, async () => {
+        try {
+          await apiCall('DELETE', `/groups/${id}`);
+          if (state.selectedGroupId == id) state.selectedGroupId = 'all';
+          await refreshAll();
+        } catch (e) { notify(e.message, 'error'); }
+      });
+    }
+
+    // ── Commands ─────────────────────────────────────────────────────────────────
+
+    async function loadCommands() {
+      const params = new URLSearchParams({
+        sort: document.getElementById('sort-select')?.value || 'recent',
+        limit: state.limit,
+        offset: state.offset,
+      });
+      if (state.selectedGroupId !== 'all') params.set('group_id', state.selectedGroupId);
+      if (state.searchQuery) params.set('q', state.searchQuery);
+      state.activeTags.forEach(t => params.append('tag', t));
+
+      document.getElementById('commands-list').innerHTML = '<div style="padding:16px;text-align:center"><div class="spinner"></div></div>';
+      try {
+        const result = await apiCall('GET', `/commands/paged?${params}`);
+        state.commands = result.items || result;
+        state.total = result.total || state.commands.length;
+        renderCommands();
+        renderPagination();
+        loadTags();
+      } catch (e) {
+        document.getElementById('commands-list').innerHTML = `<div style="padding:16px;color:var(--vscode-errorForeground)">${esc(e.message)}</div>`;
+      }
+    }
+
+    function renderCommands() {
+      const list = document.getElementById('commands-list');
+      if (state.commands.length === 0) {
+        list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--vscode-descriptionForeground)">No commands found</div>';
+        return;
+      }
+      list.innerHTML = state.commands.map(c => renderCommandCard(c, 'loadCommands')).join('');
+    }
+
+    function renderCommandCard(c, refreshFn) {
+      const group = state.groups.find(g => g.id == c.group_id);
+      const groupColor = group?.color || 'var(--vscode-panel-border, rgba(128, 128, 128, 0.25))';
+      const tags = (c.tags || []).map(t => `<span class="badge">${esc(t)}</span>`).join(' ');
+      const vars = extractVariables(c.command).map(v => `<span class="variable-chip">{${esc(v)}}</span>`).join(' ');
+      const cmdShort = c.command.length > 180 ? c.command.slice(0, 180) + '…' : c.command;
+      return `<div class="cmd-card" style="--cmd-group-accent:${esc(groupColor)};--cmd-group-border:color-mix(in srgb, ${esc(groupColor)} 58%, transparent);">
+        <div class="cmd-main">
+            <div class="cmd-title">
+                ${c.is_favorite ? '<span class="cmd-favorite-badge" title="Favorite">★</span>' : ''}
+                <span class="cmd-title-text">${esc(c.title)}</span>
+            </div>
+            <div class="cmd-text"><span class="cmd-code">${highlightCommand(cmdShort)}</span></div>
+            <div class="cmd-meta">
+                ${tags}
+                ${vars}
+                ${c.copy_count ? `<span class="cmd-copy-count">copied ×${c.copy_count}</span>` : ''}
+            </div>
+        </div>
+        <div class="cmd-actions">
+            <button class="btn-icon btn-sm" data-action="copy-command" data-command-id="${c.id}" title="Copy">⎘</button>
+            <button class="btn-icon btn-sm" data-action="run-command" data-command-id="${c.id}" title="Run in terminal">▶</button>
+            <button class="btn-icon btn-sm" data-action="insert-command" data-command-id="${c.id}" title="Insert at cursor">↵</button>
+            <button class="btn-icon btn-sm" data-action="toggle-favorite" data-command-id="${c.id}" data-is-favorite="${!c.is_favorite}" title="${c.is_favorite ? 'Unfavorite' : 'Favorite'}">${c.is_favorite ? '★' : '☆'}</button>
+            <button class="btn-icon btn-sm" data-action="edit-command" data-command-id="${c.id}" title="Edit">✎</button>
+            <button class="btn-icon btn-sm" data-action="delete-command" data-command-id="${c.id}" title="Delete" style="color:var(--vscode-errorForeground,#f48771)">✕</button>
+        </div>
+    </div>`;
+    }
+
+    function findCmd(id) {
+      return state.commands.find(c => c.id === id) || state.allFavorites?.find(c => c.id === id);
+    }
+
+    function renderPagination() {
+      const el = document.getElementById('pagination');
+      const totalPages = Math.ceil(state.total / state.limit);
+      const current = Math.floor(state.offset / state.limit) + 1;
+      if (totalPages <= 1) { el.innerHTML = ''; return; }
+      el.innerHTML = `
+        <button class="btn btn-sm btn-secondary" data-action="change-page" data-page="${current - 1}" ${current <= 1 ? 'disabled' : ''}>‹</button>
+        <span class="text-sm text-muted">Page ${current} / ${totalPages} (${state.total})</span>
+        <button class="btn btn-sm btn-secondary" data-action="change-page" data-page="${current + 1}" ${current >= totalPages ? 'disabled' : ''}>›</button>
+    `;
+    }
+
+    function changePage(page) {
+      const totalPages = Math.ceil(state.total / state.limit);
+      if (page < 1 || page > totalPages) return;
+      state.offset = (page - 1) * state.limit;
+      loadCommands();
+    }
+
+    async function loadTags() {
+      try {
+        state.tags = await apiCall('GET', '/tags');
+        renderTagFilters();
+      } catch { }
+    }
+
+    function renderTagFilters() {
+      const el = document.getElementById('tag-filters');
+      if (!state.tags.length) { el.innerHTML = ''; return; }
+      el.innerHTML = state.tags.map(t => `<button class="tag-chip ${state.activeTags.includes(t) ? 'active' : ''}" data-action="toggle-tag" data-tag="${esc(t)}">#${esc(t)}</button>`).join('');
+    }
+
+    function toggleTag(tag) {
+      const idx = state.activeTags.indexOf(tag);
+      if (idx === -1) state.activeTags.push(tag);
+      else state.activeTags.splice(idx, 1);
+      state.offset = 0;
+      loadCommands();
+    }
+
+    let searchTimer;
+    function onSearch(q) {
+      clearTimeout(searchTimer);
+      state.searchQuery = q;
+      state.offset = 0;
+      searchTimer = setTimeout(loadCommands, 300);
+    }
+
+    // Command actions
+
+    async function getCmd(id) {
+      // First try from state
+      let c = findCmd(id);
+      if (!c) {
+        // Fetch from API
+        try { c = await apiCall('GET', `/commands/${id}`); } catch { return null; }
+      }
+      return c;
+    }
+
+    async function doCopy(id) {
+      const c = await getCmd(id);
+      if (!c) return;
+      const text = await resolveVars(c, { allowRawCopy: true });
+      if (text === null) return;
+      try { await apiCall('PATCH', `/commands/${id}`, { copy_count: (c.copy_count || 0) + 1 }); } catch { }
+      // Update in state
+      const idx = state.commands.findIndex(x => x.id === id);
+      if (idx !== -1) state.commands[idx].copy_count = (state.commands[idx].copy_count || 0) + 1;
+      vscode.postMessage({ type: 'copyToClipboard', text, title: c.title });
+    }
+
+    async function doRun(id) {
+      const c = await getCmd(id);
+      if (!c) return;
+      const text = await resolveVars(c);
+      if (text === null) return;
+      try { await apiCall('PATCH', `/commands/${id}`, { copy_count: (c.copy_count || 0) + 1 }); } catch { }
+      vscode.postMessage({ type: 'runInTerminal', text, title: c.title });
+    }
+
+    async function doInsert(id) {
+      const c = await getCmd(id);
+      if (!c) return;
+      const text = await resolveVars(c);
+      if (text === null) return;
+      vscode.postMessage({ type: 'insertAtCursor', text });
+    }
+
+    async function toggleFavorite(id, isFav) {
+      try {
+        await apiCall('PATCH', `/commands/${id}`, { is_favorite: isFav });
+        const idx = state.commands.findIndex(c => c.id === id);
+        if (idx !== -1) { state.commands[idx].is_favorite = isFav; renderCommands(); }
+        vscode.postMessage({ type: 'refreshTree' });
+      } catch (e) { notify(e.message, 'error'); }
+    }
+
+    async function deleteCommand(id) {
+      const c = findCmd(id);
+      showDeleteConfirm(`Delete command "${c?.title}"?`, async () => {
+        try {
+          await apiCall('DELETE', `/commands/${id}`);
+          state.commands = state.commands.filter(x => x.id !== id);
+          renderCommands();
+          renderPagination();
+          vscode.postMessage({ type: 'refreshTree' });
+        } catch (e) { notify(e.message, 'error'); }
+      });
+    }
+
+    async function openCommandModal(cmd) {
+      state.editingCommand = cmd || null;
+      document.getElementById('command-modal-title').textContent = cmd ? 'Edit Command' : 'New Command';
+      // Populate group select
+      const sel = document.getElementById('cm-group');
+      sel.innerHTML = state.groups.map(g => `<option value="${g.id}" ${cmd?.group_id == g.id ? 'selected' : ''}>${esc(g.icon || '')} ${esc(g.name)}</option>`).join('');
+      document.getElementById('cm-title').value = cmd?.title || '';
+      document.getElementById('cm-command').value = cmd?.command || '';
+      document.getElementById('cm-desc').value = cmd?.description || '';
+      document.getElementById('cm-tags').value = (cmd?.tags || []).join(', ');
+      document.getElementById('cm-favorite').checked = !!cmd?.is_favorite;
+      renderCommandVariableInputs(cmd?.command || '', cmd?.default_variables || {});
+      showModal('command-modal');
+    }
+
+    async function saveCommand() {
+      const title = val('cm-title').trim();
+      const command = val('cm-command').trim();
+      const groupId = +document.getElementById('cm-group').value;
+      if (!title || !command) { alert('Title and command are required'); return; }
+      const tags = val('cm-tags').split(',').map(t => t.trim()).filter(Boolean);
+      const defaultVariables = {};
+      document.querySelectorAll('.command-variable-default').forEach(inp => {
+        defaultVariables[inp.dataset.var] = inp.value;
+      });
+      const data = {
+        group_id: groupId, title, command,
+        description: val('cm-desc') || null,
+        tags, is_favorite: document.getElementById('cm-favorite').checked,
+        default_variables: defaultVariables,
+      };
+      try {
+        if (state.editingCommand) {
+          await apiCall('PATCH', `/commands/${state.editingCommand.id}`, data);
+        } else {
+          await apiCall('POST', '/commands', data);
+        }
+        closeModal();
+        await loadCommands();
+        vscode.postMessage({ type: 'refreshTree' });
+      } catch (e) { notify(e.message, 'error'); }
+    }
+
+    // ── Variable substitution ─────────────────────────────────────────────────────
+
+    function extractVariables(text) {
+      return [...String(text || '').matchAll(/\{\{(\w+)\}\}/g)].map(m => m[1]).filter((v, i, a) => a.indexOf(v) === i);
+    }
+
+    function highlightCommand(text) {
+      const raw = String(text || '');
+      const tokens = raw.match(/"[^"]*"|'[^']*'|\{\{\w+\}\}|[^\s]+|\s+/g) || [];
+
+      return tokens.map((token, index) => {
+        if (/^\s+$/.test(token)) return token.replace(/ /g, '&nbsp;');
+
+        let kind = 'plain';
+        const clean = token.replace(/^['"]|['"]$/g, '');
+
+        const isDangerWord = /^(rm|sudo|chmod|chown|mkfs|dd|shutdown|reboot|killall)$/i.test(clean);
+        const isDangerFlag = /^(-rf|-fr|--no-preserve-root)$/.test(token);
+
+        if (/^\{\{\w+\}\}$/.test(token)) {
+          kind = 'variable';
+        } else if (/^['"].*['"]$/.test(token)) {
+          kind = 'string';
+        } else if (isDangerWord || isDangerFlag) {
+          kind = 'danger';
+        } else if (index === 0) {
+          kind = 'command';
+        } else if (/^--?[\w-]+/.test(token)) {
+          kind = 'flag';
+        } else if (/^(\/|~\/|\.\/|\.\.\/|[A-Za-z]:\\)/.test(token) || token.includes('/')) {
+          kind = 'path';
+        }
+
+        return `<span class="cmd-token-${kind}">${esc(token)}</span>`;
+      }).join('');
+    }
+
+    function renderCommandVariableInputs(commandText, defaults = {}) {
+      const vars = extractVariables(commandText);
+      const list = document.getElementById('command-variables-list');
+      if (!vars.length) {
+        list.innerHTML = '<div class="text-sm text-muted">No variables detected yet. Add placeholders like <code>{{name}}</code> in the command above.</div>';
+        return;
+      }
+
+      list.innerHTML = vars.map(v => `
+        <div class="field">
+          <label>Default value for {{${esc(v)}}}</label>
+          <input class="command-variable-default" data-var="${esc(v)}" value="${esc(defaults[v] || '')}" placeholder="${esc(v)}" />
+        </div>
+      `).join('');
+    }
+
+    function resolveVars(cmd, options = {}) {
+      const text = cmd.command;
+      const vars = extractVariables(text);
+      if (vars.length === 0) return Promise.resolve(text);
+      return new Promise(resolve => {
+        state.varTarget = { cmd, vars, text, allowRawCopy: !!options.allowRawCopy };
+        state.varResolveCallback = resolve;
+        state.varResolveMode = 'apply';
+        document.getElementById('var-modal-cmd').textContent = text;
+        show('var-copy-raw-btn', !!options.allowRawCopy);
+        const fields = vars.map(v => `
+            <div class="field" style="margin-bottom:8px">
+                <label>{{${v}}}</label>
+                <input class="var-input" data-var="${v}" value="${esc((cmd.default_variables || {})[v] || '')}" placeholder="${v}"/>
+            </div>`).join('');
+        document.getElementById('var-fields').innerHTML = fields;
+        showModal('variable-modal');
+      });
+    }
+
+    function finalizeVarResolution(value) {
+      const resolve = state.varResolveCallback;
+      state.varResolveCallback = null;
+      state.varTarget = null;
+      state.varResolveMode = 'apply';
+      closeModal();
+      resolve?.(value);
+    }
+
+    function confirmVars() {
+      if (!state.varTarget) return;
+      let text = state.varTarget.text;
+      document.querySelectorAll('.var-input').forEach(inp => {
+        text = text.replaceAll(`{{${inp.dataset.var}}}`, inp.value);
+      });
+      finalizeVarResolution(text);
+    }
+
+    function copyVarsRaw() {
+      if (!state.varTarget?.allowRawCopy) return;
+      finalizeVarResolution(state.varTarget.text);
+    }
+
+    // ── Favorites ─────────────────────────────────────────────────────────────────
+
+    state.allFavorites = [];
+    async function loadFavorites() {
+      const list = document.getElementById('favorites-list');
+      list.innerHTML = '<div style="padding:16px;text-align:center"><div class="spinner"></div></div>';
+      try {
+        const result = await apiCall('GET', '/commands/paged?is_favorite=true&limit=100');
+        state.allFavorites = result.items || result;
+        if (!state.allFavorites.length) {
+          list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--vscode-descriptionForeground)">No favorites yet. Star a command to add it here.</div>';
+          return;
+        }
+        list.innerHTML = state.allFavorites.map(c => renderCommandCard(c, 'loadFavorites')).join('');
+      } catch (e) {
+        list.innerHTML = `<div style="padding:16px;color:var(--vscode-errorForeground)">${esc(e.message)}</div>`;
+      }
+    }
+
+    // ── Stats ─────────────────────────────────────────────────────────────────────
+
+    async function loadStats() {
+      try {
+        const stats = await apiCall('GET', '/stats/dashboard');
+        const grid = document.getElementById('stats-grid');
+        grid.innerHTML = [
+          ['Total Commands', stats.total_commands ?? stats.commands_count ?? '-'],
+          ['Groups', stats.total_groups ?? stats.groups_count ?? '-'],
+          ['Tags', stats.total_tags ?? stats.tags_count ?? '-'],
+          ['Total Copies', stats.total_copies ?? stats.copy_count ?? '-'],
+        ].map(([label, val]) => `<div class="stat-card"><div class="stat-value">${val}</div><div class="stat-label">${label}</div></div>`).join('');
+
+        const top = stats.top_commands || [];
+        const topList = document.getElementById('top-list');
+        if (!top.length) { topList.innerHTML = '<div class="text-sm text-muted">No data yet</div>'; return; }
+        topList.innerHTML = top.map((c, i) => `<div class="top-item">
+            <span class="top-rank">#${i + 1}</span>
+            <span class="flex-1 truncate">${esc(c.title)}</span>
+            <span class="badge">×${c.copy_count || 0}</span>
+        </div>`).join('');
+      } catch (e) { notify(e.message, 'error'); }
+    }
+
+    // ── Import ────────────────────────────────────────────────────────────────────
+
+    async function loadImportGroups() {
+      try {
+        const groups = state.groups.length ? state.groups : await apiCall('GET', '/groups');
+        const sel = document.getElementById('import-group-select');
+        sel.innerHTML = groups.map(g => `<option value="${g.id}">${esc(g.icon || '')} ${esc(g.name)}</option>`).join('');
+      } catch { }
+    }
+
+    async function previewImport() {
+      const groupId = +document.getElementById('import-group-select').value;
+      const history = document.getElementById('import-history-text').value;
+      const tags = document.getElementById('import-tags-input').value.split(',').map(t => t.trim()).filter(Boolean);
+      if (!history.trim()) { alert('Please paste your shell history'); return; }
+
+      try {
+        const result = await apiCall('POST', '/import/history/preview', { group_id: groupId, history, tags });
+        state.importPreviewData = result;
+        document.getElementById('import-btn').disabled = result.created_candidates === 0;
+
+        const summary = document.getElementById('import-summary');
+        summary.textContent = `${result.created_candidates} new • ${result.duplicate_candidates} duplicates • ${result.noise_candidates} noise — out of ${result.parsed} parsed lines`;
+        summary.classList.remove('hidden');
+
+        const preview = document.getElementById('import-preview');
+        const rows = (result.items || []).slice(0, 200).map(item => `<div class="preview-row">
+            <span class="preview-status status-${item.status}">${item.status}${item.reason ? ` (${item.reason})` : ''}</span>
+            <span class="flex-1 truncate" style="font-family:monospace;font-size:10px">${esc(item.command)}</span>
+        </div>`).join('');
+        preview.innerHTML = rows || '<div style="padding:8px;text-align:center;color:var(--vscode-descriptionForeground)">No results</div>';
+      } catch (e) { notify(e.message, 'error'); }
+    }
+
+    async function doImport() {
+      const groupId = +document.getElementById('import-group-select').value;
+      const history = document.getElementById('import-history-text').value;
+      const tags = document.getElementById('import-tags-input').value.split(',').map(t => t.trim()).filter(Boolean);
+      try {
+        const result = await apiCall('POST', '/import/history', { group_id: groupId, history, tags });
+        notify(`Imported ${result.created} commands (${result.skipped_duplicates} duplicates skipped)`, 'info');
+        document.getElementById('import-history-text').value = '';
+        document.getElementById('import-preview').innerHTML = '';
+        document.getElementById('import-summary').classList.add('hidden');
+        document.getElementById('import-btn').disabled = true;
+        state.importPreviewData = null;
+        vscode.postMessage({ type: 'refreshTree' });
+        await loadGroups();
+      } catch (e) { notify(e.message, 'error'); }
+    }
+
+    // ── Modal helpers ─────────────────────────────────────────────────────────────
+
+    function showModal(id) {
+      document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+      document.getElementById('modal-overlay').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modal-overlay').classList.add('hidden');
+      document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
+      if (state.varResolveCallback && state.varResolveMode !== 'apply') {
+        state.varResolveCallback(null);
+        state.varResolveCallback = null;
+        state.varTarget = null;
+      }
+      state.varResolveMode = 'apply';
+    }
+
+    function closeModalOnOverlay(e) {
+      if (e.target === document.getElementById('modal-overlay')) {
+        if (state.varResolveCallback) state.varResolveMode = 'cancel';
+        closeModal();
+      }
+    }
+
+    function showDeleteConfirm(text, callback) {
+      state.deleteTarget = callback;
+      document.getElementById('delete-confirm-text').textContent = text;
+      showModal('delete-confirm-modal');
+    }
+
+    function confirmDelete() {
+      closeModal();
+      state.deleteTarget?.();
+      state.deleteTarget = null;
+    }
+
+    // ── Utilities ─────────────────────────────────────────────────────────────────
+
+    function show(id, condition = true) {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('hidden', !condition);
+    }
+    function hide(id) { show(id, false); }
+    function val(id) { return document.getElementById(id)?.value || ''; }
+    function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function notify(text, level = 'info') { vscode.postMessage({ type: 'notify', text, level }); }
+
+    async function refreshAll() {
+      await loadGroups();
+      await loadCommands();
+    }
+
+    function initEventHandlers() {
+      document.addEventListener('click', event => {
+        const target = event.target.closest('[data-action]');
+        if (!target) return;
+
+        const { action } = target.dataset;
+
+        if (action === 'select-group') {
+          selectGroup(target.dataset.groupId || target.dataset.id || 'all');
+        } else if (action === 'switch-login-mode') {
+          switchLoginMode(target.dataset.mode || 'local');
+        } else if (action === 'do-login') {
+          doLogin();
+        } else if (action === 'switch-tab') {
+          switchTab(target.dataset.tab || 'commands');
+        } else if (action === 'refresh-all') {
+          refreshAll();
+        } else if (action === 'do-logout') {
+          doLogout();
+        } else if (action === 'open-group-modal') {
+          openGroupModal(null);
+        } else if (action === 'open-command-modal') {
+          openCommandModal(null);
+        } else if (action === 'copy-command') {
+          doCopy(+target.dataset.commandId);
+        } else if (action === 'run-command') {
+          doRun(+target.dataset.commandId);
+        } else if (action === 'insert-command') {
+          doInsert(+target.dataset.commandId);
+        } else if (action === 'toggle-favorite') {
+          toggleFavorite(+target.dataset.commandId, target.dataset.isFavorite === 'true');
+        } else if (action === 'edit-command') {
+          openCommandModal(findCmd(+target.dataset.commandId));
+        } else if (action === 'delete-command') {
+          deleteCommand(+target.dataset.commandId);
+        } else if (action === 'change-page') {
+          changePage(+target.dataset.page);
+        } else if (action === 'toggle-tag') {
+          toggleTag(target.dataset.tag || '');
+        } else if (action === 'preview-import') {
+          previewImport();
+        } else if (action === 'do-import') {
+          doImport();
+        } else if (action === 'close-modal') {
+          if (state.varResolveCallback) state.varResolveMode = 'cancel';
+          closeModal();
+        } else if (action === 'save-group') {
+          saveGroup();
+        } else if (action === 'save-command') {
+          saveCommand();
+        } else if (action === 'confirm-vars') {
+          confirmVars();
+        } else if (action === 'copy-vars-raw') {
+          copyVarsRaw();
+        } else if (action === 'confirm-delete') {
+          confirmDelete();
+        }
+      });
+
+      document.addEventListener('contextmenu', event => {
+        const group = event.target.closest('.group-item[data-group-id]');
+        if (!group) return;
+        event.preventDefault();
+        groupContextMenu(event, +group.dataset.groupId);
+      });
+
+      document.getElementById('search-input')?.addEventListener('input', event => onSearch(event.target.value));
+      document.getElementById('sort-select')?.addEventListener('change', () => loadCommands());
+      document.getElementById('cm-command')?.addEventListener('input', event => {
+        const currentDefaults = {};
+        document.querySelectorAll('.command-variable-default').forEach(inp => {
+          currentDefaults[inp.dataset.var] = inp.value;
+        });
+        renderCommandVariableInputs(event.target.value, {
+          ...(state.editingCommand?.default_variables || {}),
+          ...currentDefaults,
+        });
+      });
+      document.getElementById('modal-overlay')?.addEventListener('click', closeModalOnOverlay);
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        if (state.varResolveCallback) state.varResolveMode = 'cancel';
+        closeModal();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        document.getElementById('search-input')?.focus();
+      }
+    });
+
+    // Init
+    initEventHandlers();
+    vscode.postMessage({ type: 'ready' });
+  </script>
+</body>
+
+</html>

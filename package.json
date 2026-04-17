@@ -1,0 +1,98 @@
+{
+  "name": "command-keeper",
+  "displayName": "Command Keeper",
+  "description": "Store, organize and quickly access your terminal commands directly from VS Code",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.116.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "command-keeper",
+          "title": "Command Keeper",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "command-keeper": [
+        { "id": "commandKeeperGroups", "name": "Commands" },
+        { "id": "commandKeeperFavorites", "name": "Favorites" }
+      ]
+    },
+    "commands": [
+      { "command": "command-keeper.openPanel", "title": "Command Keeper: Open Panel", "icon": "$(window)" },
+      { "command": "command-keeper.palette", "title": "Command Keeper: Quick Palette", "icon": "$(zap)" },
+      { "command": "command-keeper.search", "title": "Command Keeper: Search Commands" },
+      { "command": "command-keeper.addCommand", "title": "Command Keeper: Add Command", "icon": "$(add)" },
+      { "command": "command-keeper.saveClipboardCommand", "title": "Command Keeper: Save Copied Terminal Command", "icon": "$(clippy)" },
+      { "command": "command-keeper.saveTerminalSelection", "title": "Command Keeper: Save Selected Terminal Command", "icon": "$(save)" },
+      { "command": "command-keeper.login", "title": "Command Keeper: Login / Connect" },
+      { "command": "command-keeper.logout", "title": "Command Keeper: Logout / Disconnect" },
+      { "command": "command-keeper.refresh", "title": "Command Keeper: Refresh", "icon": "$(refresh)" },
+      { "command": "command-keeper.copyCommand", "title": "Copy to Clipboard", "icon": "$(copy)" },
+      { "command": "command-keeper.runInTerminal", "title": "Run in Terminal", "icon": "$(terminal-bash)" },
+      { "command": "command-keeper.insertAtCursor", "title": "Insert at Cursor", "icon": "$(insert)" }
+    ],
+    "menus": {
+      "view/title": [
+        { "command": "command-keeper.refresh", "when": "view == commandKeeperGroups", "group": "navigation@1" },
+        { "command": "command-keeper.palette", "when": "view == commandKeeperGroups", "group": "navigation@2" },
+        { "command": "command-keeper.openPanel", "when": "view == commandKeeperGroups", "group": "navigation@3" },
+        { "command": "command-keeper.saveClipboardCommand", "when": "view == commandKeeperGroups", "group": "navigation@4" }
+      ],
+      "terminal/context": [
+        { "command": "command-keeper.saveTerminalSelection", "when": "terminalTextSelected", "group": "3_commandKeeper@1" },
+        { "command": "command-keeper.saveClipboardCommand", "when": "!terminalTextSelected", "group": "3_commandKeeper@2" }
+      ],
+      "view/item/context": [
+        { "command": "command-keeper.copyCommand", "when": "viewItem == command", "group": "inline@1" },
+        { "command": "command-keeper.runInTerminal", "when": "viewItem == command", "group": "inline@2" },
+        { "command": "command-keeper.insertAtCursor", "when": "viewItem == command", "group": "inline@3" }
+      ]
+    },
+    "keybindings": [
+      { "command": "command-keeper.palette", "key": "ctrl+shift+;", "mac": "cmd+shift+;" },
+      { "command": "command-keeper.search", "key": "ctrl+shift+k", "mac": "cmd+shift+k" },
+      { "command": "command-keeper.saveClipboardCommand", "key": "ctrl+shift+alt+s", "mac": "cmd+shift+alt+s", "when": "terminalFocus || terminalTextSelected" }
+    ],
+    "configuration": {
+      "title": "Command Keeper",
+      "properties": {
+        "commandKeeper.storageMode": {
+          "type": "string",
+          "enum": ["local", "github-gist"],
+          "enumDescriptions": [
+            "Store commands locally in VS Code's global storage (JSON file)",
+            "Sync commands with a GitHub Gist (requires a Personal Access Token)"
+          ],
+          "default": "local",
+          "description": "Where to store your commands"
+        },
+        "commandKeeper.githubGistId": {
+          "type": "string",
+          "default": "",
+          "description": "GitHub Gist ID to sync with (leave empty to create a new one on first sync)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.116.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "eslint": "^9.39.3",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2"
+  }
+}
