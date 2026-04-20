@@ -6,7 +6,7 @@ Terminal Vault helps you build your own command library without leaving your edi
 
 ## 🎬 Demo
 
-<video src="https://raw.githubusercontent.com/serge-eric-kalaga/TerminalVault-GithubExtension/main/images/demo.mp4" controls width="100%"></video>
+<video src="https://raw.githubusercontent.com/serge-eric-kalaga/TerminalVault-GithubExtension/main/resources/images/demo.mp4" controls width="100%"></video>
 
 ---
 
@@ -14,31 +14,31 @@ Terminal Vault helps you build your own command library without leaving your edi
 
 ### Panel principal
 
-![Main Panel](./resources/images/main-panel.png.png)
+![Main Panel](https://raw.githubusercontent.com/serge-eric-kalaga/TerminalVault-GithubExtension/main/resources/images/main-panel.png.png)
 
 Groupes à gauche, commandes au centre avec tags et variables. Synchronisation GitHub Gist visible dans la barre du haut.
 
 ### Créer un groupe
 
-![New Group](./resources/images/newgroup.png)
+![New Group](https://raw.githubusercontent.com/serge-eric-kalaga/TerminalVault-GithubExtension/main/resources/images/newgroup.png)
 
 Choisissez un nom, une icône et une couleur pour organiser vos commandes.
 
 ### Ajouter une commande
 
-![New Command](./resources/images/newcommand.png)
+![New Command](https://raw.githubusercontent.com/serge-eric-kalaga/TerminalVault-GithubExtension/main/resources/images/newcommand.png)
 
 Saisissez le titre, la commande, une description, des tags, et définissez des variables avec `{{ma_variable}}`.
 
 ### Remplir les variables
 
-![Fill Variables](./resources/images/copie-fill-variables.png)
+![Fill Variables](https://raw.githubusercontent.com/serge-eric-kalaga/TerminalVault-GithubExtension/main/resources/images/copie-fill-variables.png)
 
 Avant chaque copie ou exécution, Terminal Vault détecte automatiquement les variables et propose un formulaire pour les remplir.
 
 ### Palette de commandes & raccourcis
 
-![Shortcuts](./resources/images/raccourcis.png)
+![Shortcuts](https://raw.githubusercontent.com/serge-eric-kalaga/TerminalVault-GithubExtension/main/resources/images/raccourcis.png)
 
 Accédez à toutes les actions Terminal Vault depuis la palette de commandes VS Code.
 
