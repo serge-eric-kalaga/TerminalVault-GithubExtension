@@ -16,3 +16,4 @@ jsconfig.json
 **/*.map
 images/**
 *.vsix
+./gist-file-sample.json

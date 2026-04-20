@@ -1,36 +1,20 @@
 <svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background -->
-  <rect x="16" y="16" width="224" height="224" rx="32" fill="#0F172A"/>
-
-  <!-- Inner glow -->
-  <rect x="24" y="24" width="208" height="208" rx="28" fill="url(#gradient)" stroke="#1E293B" stroke-width="2"/>
-
   <!-- Vault body -->
-  <rect x="56" y="64" width="120" height="96" rx="16" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <rect x="56" y="48" width="144" height="120" rx="16" fill="none" stroke="currentColor" stroke-width="12"/>
 
-  <!-- Vault hinge -->
-  <rect x="52" y="80" width="8" height="24" rx="4" fill="#475569"/>
-  <rect x="52" y="112" width="8" height="24" rx="4" fill="#475569"/>
+  <!-- Vault hinges -->
+  <rect x="44" y="68" width="12" height="28" rx="6" fill="currentColor"/>
+  <rect x="44" y="108" width="12" height="28" rx="6" fill="currentColor"/>
 
-  <!-- Terminal prompt -->
-  <text x="92" y="122" font-family="monospace" font-size="36" fill="#22C55E">&gt;</text>
-  <rect x="120" y="112" width="32" height="6" rx="3" fill="#22C55E"/>
+  <!-- Terminal prompt > -->
+  <text x="80" y="130" font-family="monospace" font-size="48" fill="currentColor">&gt;_</text>
 
-  <!-- Lock -->
-  <rect x="150" y="108" width="48" height="40" rx="8" fill="url(#lockGradient)"/>
-  <path d="M164 108V96a12 12 0 0 1 24 0v12" stroke="#38BDF8" stroke-width="4" stroke-linecap="round"/>
-  <circle cx="174" cy="128" r="4" fill="#0F172A"/>
+  <!-- Lock body -->
+  <rect x="152" y="104" width="52" height="44" rx="8" fill="currentColor"/>
+  <!-- Lock shackle -->
+  <path d="M164 104V90a14 14 0 0 1 28 0v14" stroke="currentColor" stroke-width="10" stroke-linecap="round" fill="none"/>
 
-  <!-- Gradients -->
-  <defs>
-    <linearGradient id="gradient" x1="24" y1="24" x2="232" y2="232" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0EA5E9"/>
-      <stop offset="1" stop-color="#1D4ED8"/>
-    </linearGradient>
-
-    <linearGradient id="lockGradient" x1="150" y1="108" x2="198" y2="148" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#22C55E"/>
-      <stop offset="1" stop-color="#06B6D4"/>
-    </linearGradient>
-  </defs>
+  <!-- Bottom handle -->
+  <line x1="128" y1="168" x2="128" y2="200" stroke="currentColor" stroke-width="12" stroke-linecap="round"/>
+  <line x1="96" y1="200" x2="160" y2="200" stroke="currentColor" stroke-width="12" stroke-linecap="round"/>
 </svg>

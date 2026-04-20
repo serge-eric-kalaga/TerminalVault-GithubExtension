@@ -257,11 +257,11 @@ async function updateStatusBar() {
     if (!statusBarItem) return;
     const mode = vscode.workspace.getConfiguration('terminalVault').get('storageMode', 'local');
 
-    const modeIcons = { local: '$(database)', 'github-gist': '$(github)' };
-    const icon = modeIcons[mode] || '$(terminal)';
+    const modeIcons = { local: '$(shield)', 'github-gist': '$(shield)' };
+    const icon = modeIcons[mode] || '$(shield)';
 
     if (mode !== 'local' && !storage.isAuthenticated()) {
-        statusBarItem.text = `${icon} TV: Login`;
+        statusBarItem.text = `$(lock) TV: Login`;
         statusBarItem.tooltip = 'Terminal Vault — click to connect';
         statusBarItem.command = 'terminal-vault.login';
     } else {
