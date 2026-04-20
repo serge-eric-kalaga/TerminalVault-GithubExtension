@@ -14,7 +14,7 @@ async function activate(context) {
 
     // Status bar
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    statusBarItem.command = 'command-keeper.openPanel';
+    statusBarItem.command = 'terminal-vault.openPanel';
     context.subscriptions.push(statusBarItem);
 
     // Tree providers
@@ -22,50 +22,53 @@ async function activate(context) {
     favoritesProvider = new FavoritesProvider(storage);
 
     context.subscriptions.push(
-        vscode.window.registerTreeDataProvider('commandKeeperGroups', commandsProvider),
-        vscode.window.registerTreeDataProvider('commandKeeperFavorites', favoritesProvider)
+        vscode.window.registerTreeDataProvider('terminalVaultGroups', commandsProvider),
+        vscode.window.registerTreeDataProvider('terminalVaultFavorites', favoritesProvider)
     );
 
     // Commands
     context.subscriptions.push(
-        vscode.commands.registerCommand('command-keeper.openPanel', () => {
+        vscode.commands.registerCommand('terminal-vault.openPanel', () => {
             MainPanel.createOrShow(context, storage, refreshProviders);
         }),
-        vscode.commands.registerCommand('command-keeper.palette', () => {
+        vscode.commands.registerCommand('terminal-vault.palette', () => {
             showCommandPalette(storage);
         }),
-        vscode.commands.registerCommand('command-keeper.search', () => {
+        vscode.commands.registerCommand('terminal-vault.search', () => {
             showCommandPalette(storage);
         }),
-        vscode.commands.registerCommand('command-keeper.refresh', () => {
+        vscode.commands.registerCommand('terminal-vault.refresh', () => {
             refreshProviders();
             updateStatusBar();
         }),
-        vscode.commands.registerCommand('command-keeper.login', async () => {
+        vscode.commands.registerCommand('terminal-vault.sync', async () => {
+            await syncWithGitHub();
+        }),
+        vscode.commands.registerCommand('terminal-vault.login', async () => {
             await performLogin(context);
         }),
-        vscode.commands.registerCommand('command-keeper.logout', async () => {
+        vscode.commands.registerCommand('terminal-vault.logout', async () => {
             await storage.logout();
             refreshProviders();
             updateStatusBar();
-            vscode.window.showInformationMessage('Command Keeper: Disconnected');
+            vscode.window.showInformationMessage('Terminal Vault: Disconnected');
         }),
-        vscode.commands.registerCommand('command-keeper.copyCommand', async (item) => {
+        vscode.commands.registerCommand('terminal-vault.copyCommand', async (item) => {
             await handleAction(item, 'copy');
         }),
-        vscode.commands.registerCommand('command-keeper.runInTerminal', async (item) => {
+        vscode.commands.registerCommand('terminal-vault.runInTerminal', async (item) => {
             await handleAction(item, 'terminal');
         }),
-        vscode.commands.registerCommand('command-keeper.insertAtCursor', async (item) => {
+        vscode.commands.registerCommand('terminal-vault.insertAtCursor', async (item) => {
             await handleAction(item, 'insert');
         }),
-        vscode.commands.registerCommand('command-keeper.addCommand', async () => {
+        vscode.commands.registerCommand('terminal-vault.addCommand', async () => {
             await quickAddCommand();
         }),
-        vscode.commands.registerCommand('command-keeper.saveClipboardCommand', async () => {
+        vscode.commands.registerCommand('terminal-vault.saveClipboardCommand', async () => {
             await quickAddFromClipboard();
         }),
-        vscode.commands.registerCommand('command-keeper.saveTerminalSelection', async () => {
+        vscode.commands.registerCommand('terminal-vault.saveTerminalSelection', async () => {
             await saveTerminalSelection();
         })
     );
@@ -73,7 +76,7 @@ async function activate(context) {
     // Reload storage when settings change
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(e => {
-            if (e.affectsConfiguration('commandKeeper')) {
+            if (e.affectsConfiguration('terminalVault')) {
                 storage = createStorage(context);
                 storage.initAuth().then(() => {
                     refreshProviders();
@@ -96,22 +99,22 @@ function refreshProviders() {
 }
 
 async function performLogin(context) {
-    const mode = vscode.workspace.getConfiguration('commandKeeper').get('storageMode', 'local');
+    const mode = vscode.workspace.getConfiguration('terminalVault').get('storageMode', 'local');
 
     if (mode === 'github-gist') {
-        const pat = await vscode.window.showInputBox({
-            prompt: 'GitHub Personal Access Token (needs gist scope)',
-            password: true,
-            placeHolder: 'ghp_…',
-        });
-        if (!pat) return;
         try {
-            await storage.login(pat);
-            vscode.window.showInformationMessage('Command Keeper: Connected to GitHub Gist');
+            await storage.login();
+            // Force un pull du gist pour charger les données à jour
+            if (typeof storage._pullFromGist === 'function') {
+                await storage._pullFromGist({ throwOnError: false });
+            } else if (typeof storage.syncNow === 'function') {
+                await storage.syncNow();
+            }
+            vscode.window.showInformationMessage('Terminal Vault: Connected to GitHub Gist');
             updateStatusBar();
             refreshProviders();
         } catch (e) {
-            vscode.window.showErrorMessage(`GitHub login failed: ${e.message}`);
+            vscode.window.showErrorMessage(`GitHub connection failed: ${e.message}`);
         }
         return;
     }
@@ -130,13 +133,13 @@ async function handleAction(item, action) {
         if (text === null) return;
     }
 
-    try { await storage.incrementCopy(cmd.id, cmd.copy_count || 0); } catch {}
+    try { await storage.incrementCopy(cmd.id, cmd.copy_count || 0); } catch { }
 
     if (action === 'copy') {
         await vscode.env.clipboard.writeText(text);
         vscode.window.showInformationMessage(`Copied: ${cmd.title}`);
     } else if (action === 'terminal') {
-        const terminal = vscode.window.activeTerminal || vscode.window.createTerminal('Command Keeper');
+        const terminal = vscode.window.activeTerminal || vscode.window.createTerminal('Terminal Vault');
         terminal.show();
         terminal.sendText(text);
     } else if (action === 'insert') {
@@ -158,7 +161,7 @@ function suggestTitleFromCommand(command) {
 
 async function quickAddCommand(prefill = {}) {
     if (!storage.isAuthenticated()) {
-        const choice = await vscode.window.showWarningMessage('Not connected to Command Keeper', 'Connect');
+        const choice = await vscode.window.showWarningMessage('Not connected to Terminal Vault', 'Connect');
         if (choice === 'Connect') await performLogin();
         return;
     }
@@ -171,7 +174,7 @@ async function quickAddCommand(prefill = {}) {
 
     if (!groups.length) {
         const choice = await vscode.window.showWarningMessage('No groups yet. Open the panel to create one.', 'Open Panel');
-        if (choice === 'Open Panel') vscode.commands.executeCommand('command-keeper.openPanel');
+        if (choice === 'Open Panel') vscode.commands.executeCommand('terminal-vault.openPanel');
         return;
     }
 
@@ -245,38 +248,64 @@ async function quickAddFromClipboard() {
 async function saveTerminalSelection() {
     try {
         await vscode.commands.executeCommand('workbench.action.terminal.copySelection');
-    } catch {}
+    } catch { }
 
     await quickAddFromClipboard();
 }
 
 async function updateStatusBar() {
     if (!statusBarItem) return;
-    const mode = vscode.workspace.getConfiguration('commandKeeper').get('storageMode', 'local');
+    const mode = vscode.workspace.getConfiguration('terminalVault').get('storageMode', 'local');
 
     const modeIcons = { local: '$(database)', 'github-gist': '$(github)' };
     const icon = modeIcons[mode] || '$(terminal)';
 
     if (mode !== 'local' && !storage.isAuthenticated()) {
-        statusBarItem.text = `${icon} CK: Login`;
-        statusBarItem.tooltip = 'Command Keeper — click to connect';
-        statusBarItem.command = 'command-keeper.login';
+        statusBarItem.text = `${icon} TV: Login`;
+        statusBarItem.tooltip = 'Terminal Vault — click to connect';
+        statusBarItem.command = 'terminal-vault.login';
     } else {
         const healthy = await storage.checkHealth?.() ?? true;
         if (!healthy) {
-            statusBarItem.text = `$(warning) CK: Offline`;
-            statusBarItem.tooltip = 'Command Keeper backend unreachable — click to open panel';
+            statusBarItem.text = `$(warning) TV: Offline`;
+            statusBarItem.tooltip = 'Terminal Vault backend unreachable — click to open panel';
             statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
         } else {
-            statusBarItem.text = `${icon} Command Keeper`;
-            statusBarItem.tooltip = `Command Keeper (${mode}) — click to open`;
+            const syncStatus = storage.getSyncStatus?.();
+            const syncSuffix = mode === 'github-gist' && syncStatus?.state && syncStatus.state !== 'synced'
+                ? ` • ${syncStatus.state}`
+                : '';
+            statusBarItem.text = `${icon} Terminal Vault`;
+            statusBarItem.tooltip = `Terminal Vault (${mode}${syncSuffix}) — click to open`;
             statusBarItem.backgroundColor = undefined;
-            statusBarItem.command = 'command-keeper.openPanel';
+            statusBarItem.command = 'terminal-vault.openPanel';
         }
     }
     statusBarItem.show();
 }
 
-function deactivate() {}
+async function syncWithGitHub() {
+    if (vscode.workspace.getConfiguration('terminalVault').get('storageMode', 'local') !== 'github-gist') {
+        vscode.window.showWarningMessage('Switch storage mode to GitHub Gist to use sync.');
+        return;
+    }
+
+    if (!storage.isAuthenticated()) {
+        const choice = await vscode.window.showWarningMessage('Connect to GitHub Gist before syncing.', 'Connect');
+        if (choice === 'Connect') await performLogin();
+        return;
+    }
+
+    try {
+        await storage.syncNow?.();
+        refreshProviders();
+        updateStatusBar();
+        vscode.window.showInformationMessage('Terminal Vault: GitHub sync completed');
+    } catch (e) {
+        vscode.window.showErrorMessage(`GitHub sync failed: ${e.message}`);
+    }
+}
+
+function deactivate() { }
 
 module.exports = { activate, deactivate };

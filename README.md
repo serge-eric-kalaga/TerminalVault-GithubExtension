@@ -1,12 +1,12 @@
-# ⌨️ Command Keeper
+# ⌨️ Terminal Vault
 
 Save, organize, search, and reuse your terminal commands directly inside VS Code.
 
-Command Keeper helps you build your own command library without leaving your editor. Keep your favorite shell commands, organize them by group, add variables, and reuse them in one click.
+Terminal Vault helps you build your own command library without leaving your editor. Keep your favorite shell commands, organize them by group, add variables, and reuse them in one click.
 
 ## ✨ What You Can Do
 
-With Command Keeper, you can:
+With Terminal Vault, you can:
 
 - 📁 organize commands into groups with custom colors and icons
 - ⭐ mark your favorite commands
@@ -22,7 +22,7 @@ With Command Keeper, you can:
 - 📥 import useful commands from your shell history
 - ☁️ store commands locally or sync them with GitHub Gist
 
-## 🚀 Why Command Keeper?
+## 🚀 Why Terminal Vault?
 
 Instead of searching old notes, shell history, chat messages, or random files, you keep your best commands where you actually work: inside VS Code.
 
@@ -40,28 +40,28 @@ Perfect for:
 
 Add your screenshots here:
 
-```md
-![Main Panel](images/main-panel.png)
-![Command Variables](images/command-variables.png)
-![Terminal Save Menu](images/terminal-save-menu.png)
-```
+
+![Main Panel](./images/main-panel.png.png)
+![Command Variables](./images/command-variables.png)
+![Terminal Save Menu](./images/terminal-save-menu.png)
+
 
 ### Screenshot Placeholders
 
 ```md
-![Main Panel](images/main-panel.png)
+![Main Panel](./images/main-panel.png)
 ```
 
 ```md
-![Command Cards](images/command-cards.png)
+![Command Cards](./images/command-cards.png)
 ```
 
 ```md
-![Variable Form](images/variable-form.png)
+![Variable Form](./images/variable-form.png)
 ```
 
 ```md
-![Terminal Context Menu](images/terminal-context-menu.png)
+![Terminal Context Menu](./images/terminal-context-menu.png)
 ```
 
 ## 🎬 GIF Demos
@@ -69,9 +69,9 @@ Add your screenshots here:
 Add animated demos here:
 
 ```md
-![Save from terminal](gifs/save-from-terminal.gif)
-![Copy with variables](gifs/copy-with-variables.gif)
-![Search and run](gifs/search-and-run.gif)
+![Save from terminal](./gifs/save-from-terminal.gif)
+![Copy with variables](./gifs/copy-with-variables.gif)
+![Search and run](./gifs/search-and-run.gif)
 ```
 
 ### GIF Placeholders
@@ -118,25 +118,25 @@ docker logs {{container}} --tail {{lines}}
 ```
 
 When you use a command with variables:
-- Command Keeper detects the variables automatically
+- Terminal Vault detects the variables automatically
 - a small form appears before execution or copy
 - you can set default values
 - you can also copy the original template without replacing variables
 
 ### 🖱️ Save Commands From the Terminal
 
-Command Keeper makes it easy to save commands while working in the terminal.
+Terminal Vault makes it easy to save commands while working in the terminal.
 
 You can:
 
 1. select text in the integrated terminal
 2. right-click
-3. choose `Command Keeper: Save Selected Terminal Command`
+3. choose `Terminal Vault: Save Selected Terminal Command`
 
 You can also:
 
 1. copy a command manually
-2. run `Command Keeper: Save Copied Terminal Command`
+2. run `Terminal Vault: Save Copied Terminal Command`
 
 ### 🔎 Quick Search
 
@@ -160,7 +160,7 @@ The importer helps you:
 
 ### ☁️ Storage Options
 
-Command Keeper supports:
+Terminal Vault supports:
 
 - `local` storage
 - `github-gist` storage
@@ -171,9 +171,9 @@ Use local mode for simplicity, or GitHub Gist mode if you want sync across machi
 
 ### 1. Open the panel
 
-Open the Command Keeper panel from the activity bar or run:
+Open the Terminal Vault panel from the activity bar or run:
 
-- `Command Keeper: Open Panel`
+- `Terminal Vault: Open Panel`
 
 ### 2. Create a group
 
@@ -201,17 +201,17 @@ For each command, you can:
 
 ## 🛠️ Commands
 
-Command Keeper includes these commands:
+Terminal Vault includes these commands:
 
-- `Command Keeper: Open Panel`
-- `Command Keeper: Quick Palette`
-- `Command Keeper: Search Commands`
-- `Command Keeper: Add Command`
-- `Command Keeper: Save Copied Terminal Command`
-- `Command Keeper: Save Selected Terminal Command`
-- `Command Keeper: Login / Connect`
-- `Command Keeper: Logout / Disconnect`
-- `Command Keeper: Refresh`
+- `Terminal Vault: Open Panel`
+- `Terminal Vault: Quick Palette`
+- `Terminal Vault: Search Commands`
+- `Terminal Vault: Add Command`
+- `Terminal Vault: Save Copied Terminal Command`
+- `Terminal Vault: Save Selected Terminal Command`
+- `Terminal Vault: Login / Connect`
+- `Terminal Vault: Logout / Disconnect`
+- `Terminal Vault: Refresh`
 
 ## ⌨️ Keyboard Shortcuts
 
@@ -225,12 +225,12 @@ Default shortcuts:
 
 Available settings:
 
-- `commandKeeper.storageMode`
+- `terminalVault.storageMode`
   Choose where commands are stored:
   - `local`
   - `github-gist`
 
-- `commandKeeper.githubGistId`
+- `terminalVault.githubGistId`
   The GitHub Gist ID used when sync is enabled
 
 ## 🧠 Example Use Cases
@@ -265,8 +265,7 @@ gifs/
 
 No external account is required in local mode.
 
-For GitHub sync mode, you need:
-- a GitHub Personal Access Token with `gist` scope
+For GitHub sync mode, you just need to sign in with GitHub from VS Code and approve access when prompted.
 
 ## 📝 Notes
 
@@ -290,4 +289,3 @@ First release with:
 - 📥 shell history import
 - ☁️ local and GitHub Gist storage
 - 🎨 improved command card UI
-

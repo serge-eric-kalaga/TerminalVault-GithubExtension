@@ -3,7 +3,7 @@ const { LocalStorage } = require('./local');
 const { GistStorage } = require('./gist');
 
 function createStorage(context) {
-    const mode = vscode.workspace.getConfiguration('commandKeeper').get('storageMode', 'local');
+    const mode = vscode.workspace.getConfiguration('terminalVault').get('storageMode', 'local');
     return mode === 'github-gist' ? new GistStorage(context) : new LocalStorage(context);
 }
 

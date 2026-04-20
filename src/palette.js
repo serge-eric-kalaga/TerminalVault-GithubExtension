@@ -54,8 +54,8 @@ async function resolveVariables(commandText, defaults = {}, options = {}) {
 
 async function showCommandPalette(storage) {
     if (!storage.isAuthenticated()) {
-        const choice = await vscode.window.showWarningMessage('Command Keeper: Not connected', 'Connect');
-        if (choice === 'Connect') vscode.commands.executeCommand('command-keeper.login');
+        const choice = await vscode.window.showWarningMessage('Terminal Vault: Not connected', 'Connect');
+        if (choice === 'Connect') vscode.commands.executeCommand('terminal-vault.login');
         return;
     }
 
@@ -117,13 +117,13 @@ async function executeCommand(cmd, storage) {
         if (text === null) return;
     }
 
-    try { await storage.incrementCopy(cmd.id, cmd.copy_count || 0); } catch {}
+    try { await storage.incrementCopy(cmd.id, cmd.copy_count || 0); } catch { }
 
     if (action.value === 'copy') {
         await vscode.env.clipboard.writeText(text);
         vscode.window.showInformationMessage(`Copied: ${cmd.title}`);
     } else if (action.value === 'terminal') {
-        const terminal = vscode.window.activeTerminal || vscode.window.createTerminal('Command Keeper');
+        const terminal = vscode.window.activeTerminal || vscode.window.createTerminal('Terminal Vault');
         terminal.show();
         terminal.sendText(text);
     } else if (action.value === 'insert') {

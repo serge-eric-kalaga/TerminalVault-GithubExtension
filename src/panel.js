@@ -5,7 +5,7 @@ const crypto = require('crypto');
 
 class MainPanel {
     static currentPanel = null;
-    static viewType = 'commandKeeperPanel';
+    static viewType = 'terminalVaultPanel';
 
     static createOrShow(context, storage, onRefresh) {
         const column = vscode.window.activeTextEditor?.viewColumn ?? vscode.ViewColumn.One;
@@ -19,7 +19,7 @@ class MainPanel {
 
         const panel = vscode.window.createWebviewPanel(
             MainPanel.viewType,
-            'Command Keeper',
+            'Terminal Vault',
             column,
             {
                 enableScripts: true,
@@ -45,18 +45,24 @@ class MainPanel {
             context.subscriptions
         );
 
-        this.panel.onDidDispose(() => { MainPanel.currentPanel = null; }, null, context.subscriptions);
+        this.panel.onDidDispose(() => {
+            if (this._storage.onStatusChange) this._storage.onStatusChange = null;
+            MainPanel.currentPanel = null;
+        }, null, context.subscriptions);
+
+        this._storage.onStatusChange = () => this._postAuthState();
 
         // Delay init to let the webview load
         setTimeout(() => this._postAuthState(), 600);
     }
 
     _postAuthState() {
-        const mode = vscode.workspace.getConfiguration('commandKeeper').get('storageMode', 'local');
+        const mode = vscode.workspace.getConfiguration('terminalVault').get('storageMode', 'local');
         this.panel.webview.postMessage({
             type: 'authState',
             isAuthenticated: this._storage.isAuthenticated(),
             storageMode: mode,
+            syncStatus: this._storage.getSyncStatus?.() || null,
         });
     }
 
@@ -72,18 +78,24 @@ class MainPanel {
             try {
                 const data = await this._dispatchApi(msg.method, msg.path, msg.body);
                 this.panel.webview.postMessage({ type: 'apiResponse', id, data });
+                if (msg.path === '/sync') this._postAuthState();
             } catch (err) {
                 this.panel.webview.postMessage({ type: 'apiResponse', id, error: err.message });
             }
             return;
         }
 
+        if (type === 'setStorageMode') {
+            await vscode.workspace.getConfiguration('terminalVault').update('storageMode', msg.mode, vscode.ConfigurationTarget.Global);
+            return;
+        }
+
         if (type === 'login') {
             try {
-                const mode = vscode.workspace.getConfiguration('commandKeeper').get('storageMode', 'local');
+                const mode = msg.mode || vscode.workspace.getConfiguration('terminalVault').get('storageMode', 'local');
                 let result;
                 if (mode === 'github-gist') {
-                    result = await this._storage.login(msg.pat);
+                    result = await this._storage.login();
                 } else {
                     result = await this._storage.login(msg.username, msg.password);
                 }
@@ -110,7 +122,7 @@ class MainPanel {
         }
 
         if (type === 'runInTerminal') {
-            const terminal = vscode.window.activeTerminal || vscode.window.createTerminal('Command Keeper');
+            const terminal = vscode.window.activeTerminal || vscode.window.createTerminal('Terminal Vault');
             terminal.show();
             terminal.sendText(msg.text);
             return;
@@ -154,7 +166,10 @@ class MainPanel {
         if (method === 'DELETE' && apiPath.startsWith('/groups/')) return s.deleteGroup(+apiPath.split('/')[2]);
 
         if (method === 'GET' && apiPath.startsWith('/commands/paged')) {
-            const params = Object.fromEntries(new URL('http://x' + apiPath).searchParams);
+            const url = new URL('http://x' + apiPath);
+            const params = Object.fromEntries(url.searchParams);
+            const tags = url.searchParams.getAll('tag');
+            if (tags.length > 0) params.tag = tags;
             return s.getCommandsPaged(params);
         }
         if (method === 'GET' && apiPath.startsWith('/commands/top-copied')) {
@@ -202,6 +217,9 @@ class MainPanel {
         if (method === 'GET' && apiPath === '/gist-url') {
             return { url: s.getGistUrl?.() || null };
         }
+        if (method === 'GET' && apiPath === '/sync-status') {
+            return s.getSyncStatus?.() || null;
+        }
         if (method === 'POST' && apiPath === '/sync') {
             await s.syncNow?.();
             return { ok: true };
@@ -212,7 +230,7 @@ class MainPanel {
 
     _buildHtml() {
         const nonce = crypto.randomUUID().replace(/-/g, '');
-        console.log('[CommandKeeper] Nonce utilisé pour la webview :', nonce);
+        console.log('[TerminalVault] Nonce utilisé pour la webview :', nonce);
         const htmlPath = path.join(this._context.extensionPath, 'src', 'webview', 'panel.html');
         try {
             let html = fs.readFileSync(htmlPath, 'utf8');
@@ -221,7 +239,7 @@ class MainPanel {
             return html;
         } catch (e) {
             return `<html><body style="padding:20px;font-family:sans-serif">
-                <h3>Error loading Command Keeper panel</h3>
+                <h3>Error loading Terminal Vault panel</h3>
                 <p>${e.message}</p>
             </body></html>`;
         }

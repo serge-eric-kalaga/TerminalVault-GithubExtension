@@ -29,7 +29,7 @@ class CommandItem extends vscode.TreeItem {
             : new vscode.ThemeIcon('terminal');
         // Default click = copy
         this.command = {
-            command: 'command-keeper.copyCommand',
+            command: 'terminal-vault.copyCommand',
             title: 'Copy Command',
             arguments: [this],
         };
@@ -49,7 +49,7 @@ class CommandsProvider {
     async getChildren(element) {
         if (!this._storage.isAuthenticated()) {
             const item = new vscode.TreeItem('Click here to connect…', vscode.TreeItemCollapsibleState.None);
-            item.command = { command: 'command-keeper.login', title: 'Connect' };
+            item.command = { command: 'terminal-vault.login', title: 'Connect' };
             item.iconPath = new vscode.ThemeIcon('account');
             return [item];
         }
@@ -59,7 +59,7 @@ class CommandsProvider {
                 const groups = await this._storage.getGroups();
                 if (groups.length === 0) {
                     const item = new vscode.TreeItem('No groups — open panel to create one', vscode.TreeItemCollapsibleState.None);
-                    item.command = { command: 'command-keeper.openPanel', title: 'Open Panel' };
+                    item.command = { command: 'terminal-vault.openPanel', title: 'Open Panel' };
                     item.iconPath = new vscode.ThemeIcon('info');
                     return [item];
                 }

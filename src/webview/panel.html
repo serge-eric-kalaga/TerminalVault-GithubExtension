@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-{{nonce}}';">
-  <title>Command Keeper</title>
+  <title>Terminal Vault</title>
   <style>
     *,
     *::before,
@@ -311,10 +311,96 @@
       color: var(--vscode-editor-foreground);
     }
 
+    .storage-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 2px;
+      border-radius: 10px;
+      border: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.25));
+      background: color-mix(in srgb, var(--vscode-sideBar-background, transparent) 80%, transparent);
+    }
+
+    .storage-btn {
+      border: none;
+      background: transparent;
+      color: var(--vscode-descriptionForeground);
+      padding: 6px 10px;
+      font-size: 11px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .storage-btn.active {
+      background: color-mix(in srgb, var(--vscode-button-background, #0e639c) 88%, transparent);
+      color: var(--vscode-button-foreground, #fff);
+    }
+
     #nav-right {
       display: flex;
       gap: 4px;
+      align-items: center;
       margin-left: auto;
+    }
+
+    .sync-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground);
+      border: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.25));
+      background: color-mix(in srgb, var(--vscode-sideBar-background, transparent) 78%, transparent);
+    }
+
+    .sync-pill::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: currentColor;
+      opacity: 0.9;
+    }
+
+    .sync-pill[data-state="synced"] {
+      color: #4ec9b0;
+    }
+
+    .sync-pill[data-state="queued"],
+    .sync-pill[data-state="pulling"],
+    .sync-pill[data-state="pushing"] {
+      color: #d7ba7d;
+    }
+
+    .sync-pill[data-state="error"] {
+      color: #f48771;
+    }
+
+    .account-chip {
+      display: inline-flex;
+      flex-direction: column;
+      gap: 1px;
+      padding: 5px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.25));
+      background: color-mix(in srgb, var(--vscode-sideBar-background, transparent) 82%, transparent);
+      line-height: 1.2;
+    }
+
+    .account-chip-label {
+      font-size: 10px;
+      color: var(--vscode-descriptionForeground);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .account-chip-value {
+      font-size: 11px;
+      color: var(--vscode-editor-foreground);
+      font-weight: 600;
     }
 
     /* ── Layout ── */
@@ -478,8 +564,8 @@
       inset: 0 auto 0 0;
       width: 4px;
       background: linear-gradient(180deg,
-        var(--cmd-group-accent, var(--vscode-textLink-foreground, #3794ff)),
-        color-mix(in srgb, var(--cmd-group-accent, var(--vscode-button-background, #0e639c)) 68%, transparent));
+          var(--cmd-group-accent, var(--vscode-textLink-foreground, #3794ff)),
+          color-mix(in srgb, var(--cmd-group-accent, var(--vscode-button-background, #0e639c)) 68%, transparent));
       opacity: 0.85;
     }
 
@@ -879,7 +965,7 @@
   <!-- ─── Login ─── -->
   <div id="login-screen">
     <div style="font-size:28px;margin-bottom:8px">⌨️</div>
-    <h2>Command Keeper</h2>
+    <h2>Terminal Vault</h2>
     <p class="subtitle">Store & access your terminal commands</p>
 
     <div class="mode-tabs">
@@ -895,12 +981,10 @@
 
       <!-- GitHub Gist mode -->
       <div id="login-gist" class="hidden">
-        <div class="field">
-          <label>GitHub Personal Access Token (gist scope)</label>
-          <input id="pat-input" type="password" placeholder="ghp_…" />
-        </div>
-        <p class="text-sm text-muted mt-1">A private Gist will be created to store your commands. Your token is stored
-          securely in VS Code's secret storage.</p>
+        <p class="text-sm text-muted mt-1">
+          Connect with your GitHub account and authorize Terminal Vault.
+          The extension will create and link a private Gist automatically for command sync.
+        </p>
       </div>
 
       <div id="login-error" class="hidden"></div>
@@ -915,9 +999,8 @@
 
     <!-- Top nav -->
     <div id="top-nav">
-      <span id="app-title">⌨️ Command Keeper</span>
-      <input id="search-input" type="search" placeholder="Search commands…"
-        style="max-width:240px" />
+      <span id="app-title">⌨️ Terminal Vault</span>
+      <input id="search-input" type="search" placeholder="Search commands…" style="max-width:240px" />
       <div id="nav-tabs">
         <button class="nav-tab active" data-tab="commands" data-action="switch-tab">Commands</button>
         <button class="nav-tab" data-tab="favorites" data-action="switch-tab">★ Favorites</button>
@@ -925,8 +1008,27 @@
         <button class="nav-tab" data-tab="import" data-action="switch-tab">Import</button>
       </div>
       <div id="nav-right">
+        <div class="storage-switch" title="Choose where Terminal Vault stores your data">
+          <button id="storage-local-btn" class="storage-btn" data-action="set-storage-mode"
+            data-mode="local">Local</button>
+          <button id="storage-gist-btn" class="storage-btn" data-action="set-storage-mode"
+            data-mode="github-gist">GitHub</button>
+        </div>
+        <div id="github-account-chip" class="account-chip hidden">
+          <span class="account-chip-label">Connected to GitHub</span>
+          <span id="github-account-value" class="account-chip-value">Not connected</span>
+        </div>
+        <div id="gist-id-chip" class="account-chip hidden">
+          <span class="account-chip-label">Gist ID</span>
+          <span id="gist-id-value" class="account-chip-value">-</span>
+        </div>
+        <span id="sync-pill" class="sync-pill hidden" data-state="idle">Local mode</span>
+        <button id="gist-link-btn" class="btn btn-sm btn-secondary hidden" data-action="open-gist-link"
+          title="Open GitHub Gist">Gist</button>
+        <button id="sync-now-btn" class="btn btn-sm btn-secondary hidden" data-action="sync-now"
+          title="Sync with GitHub">Sync</button>
         <button class="btn btn-sm btn-secondary" data-action="refresh-all" title="Refresh">↻</button>
-        <button class="btn btn-sm btn-secondary" data-action="do-logout">Disconnect</button>
+        <button id="disconnect-btn" class="btn btn-sm btn-secondary" data-action="do-logout">Disconnect</button>
       </div>
     </div>
 
@@ -1006,7 +1108,8 @@
           </div>
           <div class="flex gap-2">
             <button class="btn btn-secondary" data-action="preview-import">Preview</button>
-            <button class="btn btn-primary" data-action="do-import" id="import-btn" disabled>Import New Commands</button>
+            <button class="btn btn-primary" data-action="do-import" id="import-btn" disabled>Import New
+              Commands</button>
           </div>
           <div id="import-summary" class="text-sm text-muted hidden"></div>
           <div id="import-preview"></div>
@@ -1031,6 +1134,8 @@
             style="width:50px;height:28px;padding:1px;cursor:pointer" /></div>
       </div>
       <div class="modal-footer">
+        <button class="btn btn-danger hidden" id="gm-delete" data-action="delete-group">Delete</button>
+        <div style="flex:1"></div>
         <button class="btn btn-secondary" data-action="close-modal">Cancel</button>
         <button class="btn btn-primary" data-action="save-group">Save</button>
       </div>
@@ -1088,7 +1193,7 @@
 
   <script nonce="{{nonce}}">
 
-    console.log('[CommandKeeper] Webview JS loaded');
+    console.log('[TerminalVault] Webview JS loaded');
     'use strict';
 
     const vscode = acquireVsCodeApi();
@@ -1114,7 +1219,7 @@
         if (msg.error) p.reject(new Error(msg.error));
         else p.resolve(msg.data);
       } else if (msg.type === 'authState') {
-        onAuthState(msg.isAuthenticated, msg.storageMode);
+        onAuthState(msg.isAuthenticated, msg.storageMode, msg.syncStatus);
       } else if (msg.type === 'loginResult') {
         onLoginResult(msg.success, msg.error);
       }
@@ -1141,12 +1246,15 @@
       varResolveCallback: null,
       varResolveMode: 'apply',
       importPreviewData: null,
+      syncStatus: null,
     };
 
     // ── Auth ─────────────────────────────────────────────────────────────────────
 
-    function onAuthState(isAuthenticated, storageMode) {
+    function onAuthState(isAuthenticated, storageMode, syncStatus) {
       state.storageMode = storageMode || 'local';
+      state.syncStatus = syncStatus || null;
+      updateSyncUi();
       if (isAuthenticated || storageMode === 'local') {
         show('main-app');
         hide('login-screen');
@@ -1175,21 +1283,19 @@
     function doLogin() {
       hide('login-error');
       const mode = currentLoginMode;
-      if (mode === 'local') {
-        vscode.postMessage({ type: 'login' });
-        return;
+      vscode.postMessage({ type: 'login', mode });
+      if (mode !== 'local') {
+        document.getElementById('login-btn-text').textContent = 'Connecting…';
       }
-      if (mode === 'github-gist') {
-        const pat = val('pat-input');
-        if (!pat) { showLoginError('Personal Access Token is required'); return; }
-        vscode.postMessage({ type: 'login', pat });
-      }
-      document.getElementById('login-btn-text').textContent = 'Connecting…';
     }
 
     function onLoginResult(success, error) {
       document.getElementById('login-btn-text').textContent = currentLoginMode === 'local' ? 'Start' : 'Connect';
-      if (!success) showLoginError(error || 'Connection failed');
+      if (!success) {
+        showLoginError(error || 'Connection failed');
+      } else {
+        refreshAll();
+      }
     }
 
     function showLoginError(msg) {
@@ -1198,7 +1304,83 @@
       el.classList.remove('hidden');
     }
 
-    function doLogout() { vscode.postMessage({ type: 'logout' }); }
+    function doLogout() {
+      const button = document.getElementById('disconnect-btn');
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Disconnecting…';
+      }
+      state.syncStatus = null;
+      updateSyncUi();
+      vscode.postMessage({ type: 'logout' });
+    }
+
+    function updateSyncUi() {
+      const isGist = state.storageMode === 'github-gist';
+      const sync = state.syncStatus || {};
+      document.getElementById('storage-local-btn')?.classList.toggle('active', state.storageMode === 'local');
+      document.getElementById('storage-gist-btn')?.classList.toggle('active', isGist);
+      show('github-account-chip', isGist && !!sync.username);
+      show('gist-id-chip', isGist && !!sync.gistId);
+      show('sync-pill', isGist);
+      show('sync-now-btn', isGist);
+      show('gist-link-btn', isGist && !!sync.gistUrl);
+
+      const accountValue = document.getElementById('github-account-value');
+      if (accountValue) accountValue.textContent = sync.username || 'Not connected';
+
+      const gistValue = document.getElementById('gist-id-value');
+      if (gistValue) gistValue.textContent = sync.gistId || '-';
+
+      const pill = document.getElementById('sync-pill');
+      const labelMap = {
+        idle: 'Idle',
+        queued: 'Sync queued',
+        pulling: 'Pulling',
+        pushing: 'Pushing',
+        synced: sync.lastSyncedAt ? `Synced ${new Date(sync.lastSyncedAt).toLocaleTimeString()}` : 'Synced',
+        error: sync.lastError || 'Sync error',
+      };
+
+      if (pill) {
+        pill.dataset.state = sync.state || 'idle';
+        pill.textContent = isGist ? (labelMap[sync.state || 'idle'] || 'GitHub sync') : 'Local mode';
+        pill.title = sync.lastError || (sync.gistId ? `Gist: ${sync.gistId}` : 'Local storage only');
+      }
+
+      const syncBtn = document.getElementById('sync-now-btn');
+      if (syncBtn) syncBtn.disabled = ['pulling', 'pushing'].includes(sync.state);
+
+      const disconnectBtn = document.getElementById('disconnect-btn');
+      if (disconnectBtn) {
+        disconnectBtn.disabled = !isGist;
+        disconnectBtn.textContent = isGist ? 'Disconnect' : 'Local mode';
+      }
+    }
+
+    async function loadSyncStatus() {
+      if (state.storageMode !== 'github-gist') return;
+      try {
+        state.syncStatus = await apiCall('GET', '/sync-status');
+        updateSyncUi();
+      } catch { }
+    }
+
+    async function doSyncNow() {
+      try {
+        state.syncStatus = { ...(state.syncStatus || {}), state: 'pushing', lastError: null };
+        updateSyncUi();
+        await apiCall('POST', '/sync');
+        await loadSyncStatus();
+        await refreshAll();
+        notify('GitHub sync completed', 'info');
+        vscode.postMessage({ type: 'refreshTree' });
+      } catch (e) {
+        state.syncStatus = { ...(state.syncStatus || {}), state: 'error', lastError: e.message };
+        updateSyncUi();
+        notify(e.message, 'error');
+      }
+    }
 
     // ── Navigation ───────────────────────────────────────────────────────────────
 
@@ -1209,6 +1391,7 @@
       if (tab === 'favorites') loadFavorites();
       if (tab === 'stats') loadStats();
       if (tab === 'import') loadImportGroups();
+      if (state.storageMode === 'github-gist') loadSyncStatus();
     }
 
     // ── Groups ───────────────────────────────────────────────────────────────────
@@ -1262,6 +1445,12 @@
       document.getElementById('gm-desc').value = group?.description || '';
       document.getElementById('gm-icon').value = group?.icon || '📁';
       document.getElementById('gm-color').value = group?.color || '#3b82f6';
+      const deleteBtn = document.getElementById('gm-delete');
+      if (group && !group.is_default) {
+        deleteBtn.classList.remove('hidden');
+      } else {
+        deleteBtn.classList.add('hidden');
+      }
       showModal('group-modal');
     }
 
@@ -1282,6 +1471,7 @@
 
     async function deleteGroup(id) {
       const g = state.groups.find(x => x.id == id);
+      closeModal();
       showDeleteConfirm(`Delete group "${g?.name}"? All its commands will also be deleted.`, async () => {
         try {
           await apiCall('DELETE', `/groups/${id}`);
@@ -1755,6 +1945,7 @@
     async function refreshAll() {
       await loadGroups();
       await loadCommands();
+      await loadSyncStatus();
     }
 
     function initEventHandlers() {
@@ -1767,15 +1958,25 @@
         if (action === 'select-group') {
           selectGroup(target.dataset.groupId || target.dataset.id || 'all');
         } else if (action === 'switch-login-mode') {
-          switchLoginMode(target.dataset.mode || 'local');
+          const loginMode = target.dataset.mode || 'local';
+          switchLoginMode(loginMode);
+          vscode.postMessage({ type: 'setStorageMode', mode: loginMode });
         } else if (action === 'do-login') {
           doLogin();
         } else if (action === 'switch-tab') {
           switchTab(target.dataset.tab || 'commands');
+        } else if (action === 'set-storage-mode') {
+          if (target.dataset.mode && target.dataset.mode !== state.storageMode) {
+            vscode.postMessage({ type: 'setStorageMode', mode: target.dataset.mode });
+          }
         } else if (action === 'refresh-all') {
           refreshAll();
         } else if (action === 'do-logout') {
           doLogout();
+        } else if (action === 'sync-now') {
+          doSyncNow();
+        } else if (action === 'open-gist-link') {
+          if (state.syncStatus?.gistUrl) vscode.postMessage({ type: 'openExternal', url: state.syncStatus.gistUrl });
         } else if (action === 'open-group-modal') {
           openGroupModal(null);
         } else if (action === 'open-command-modal') {
@@ -1803,6 +2004,8 @@
         } else if (action === 'close-modal') {
           if (state.varResolveCallback) state.varResolveMode = 'cancel';
           closeModal();
+        } else if (action === 'delete-group') {
+          if (state.editingGroup) deleteGroup(state.editingGroup.id);
         } else if (action === 'save-group') {
           saveGroup();
         } else if (action === 'save-command') {

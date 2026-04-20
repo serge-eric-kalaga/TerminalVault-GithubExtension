@@ -2,10 +2,54 @@ const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
 
-const FILENAME = 'command-keeper-data.json';
+const FILENAME = 'terminal-vault-data.json';
 
 function emptyStore() {
-    return { version: 1, groups: [], commands: [], _nextGroupId: 1, _nextCommandId: 1 };
+    const now = new Date().toISOString();
+    return {
+        version: 2,
+        groups: [],
+        commands: [],
+        _nextGroupId: 1,
+        _nextCommandId: 1,
+        meta: {
+            last_modified_at: now,
+        },
+    };
+}
+
+function withTimestamp(entity, fallbackTime) {
+    const createdAt = entity.created_at || entity.updated_at || fallbackTime;
+    const updatedAt = entity.updated_at || entity.created_at || fallbackTime;
+    return { ...entity, created_at: createdAt, updated_at: updatedAt };
+}
+
+function normalizeStore(data) {
+    const fallback = new Date().toISOString();
+    const store = data && typeof data === 'object' ? data : emptyStore();
+    const groups = Array.isArray(store.groups) ? store.groups.map(group => withTimestamp(group, fallback)) : [];
+    const commands = Array.isArray(store.commands) ? store.commands.map(command => withTimestamp(command, fallback)) : [];
+
+    const nextGroupId = Math.max(
+        store._nextGroupId || 1,
+        groups.reduce((max, group) => Math.max(max, Number(group.id) || 0), 0) + 1
+    );
+    const nextCommandId = Math.max(
+        store._nextCommandId || 1,
+        commands.reduce((max, command) => Math.max(max, Number(command.id) || 0), 0) + 1
+    );
+
+    return {
+        version: Math.max(store.version || 1, 2),
+        groups,
+        commands,
+        _nextGroupId: nextGroupId,
+        _nextCommandId: nextCommandId,
+        meta: {
+            ...(store.meta || {}),
+            last_modified_at: store.meta?.last_modified_at || fallback,
+        },
+    };
 }
 
 class LocalStorage {
@@ -21,7 +65,7 @@ class LocalStorage {
 
     isAuthenticated() { return true; }
     async login() { return {}; }
-    async logout() {}
+    async logout() { }
 
     async checkHealth() { return true; }
 
@@ -38,7 +82,12 @@ class LocalStorage {
             this._save();
         } else {
             try {
-                this._data = JSON.parse(fs.readFileSync(fp, 'utf8'));
+                this._data = normalizeStore(JSON.parse(fs.readFileSync(fp, 'utf8')));
+                const defaultGroup = this._ensureDefaultGroup();
+                const groupIds = new Set(this._data.groups.map(g => g.id));
+                for (const cmd of this._data.commands) {
+                    if (!groupIds.has(cmd.group_id)) cmd.group_id = defaultGroup.id;
+                }
             } catch {
                 this._data = emptyStore();
             }
@@ -47,11 +96,55 @@ class LocalStorage {
 
     _save() {
         const fp = this._filePath();
+        this._touchStore();
         fs.writeFileSync(fp, JSON.stringify(this._data, null, 2), 'utf8');
     }
 
     _ensureLoaded() {
         if (!this._data) this._load();
+        this._data = normalizeStore(this._data);
+    }
+
+    _ensureDefaultGroup() {
+        const groups = this._data.groups;
+        const defaultGroups = groups.filter(g => g.is_default || g.name === 'Default Group');
+
+        if (defaultGroups.length === 0) {
+            const now = new Date().toISOString();
+            const defaultGroup = {
+                id: this._data._nextGroupId++,
+                name: 'Default Group',
+                is_default: true,
+                color: '#6b7280',
+                icon: '📁',
+                created_at: now,
+                updated_at: now,
+            };
+            this._data.groups.push(defaultGroup);
+            return defaultGroup;
+        }
+
+        if (defaultGroups.length > 1) {
+            const keep = defaultGroups.find(g => g.is_default) || defaultGroups[0];
+            const removeIds = new Set(defaultGroups.filter(g => g.id !== keep.id).map(g => g.id));
+            this._data.groups = this._data.groups.filter(g => !removeIds.has(g.id));
+            for (const cmd of this._data.commands) {
+                if (removeIds.has(cmd.group_id)) cmd.group_id = keep.id;
+            }
+            keep.is_default = true;
+            return keep;
+        }
+
+        defaultGroups[0].is_default = true;
+        return defaultGroups[0];
+    }
+
+    _touchStore() {
+        if (!this._data) return;
+        this._data.meta = {
+            ...(this._data.meta || {}),
+            last_modified_at: new Date().toISOString(),
+        };
     }
 
     // Groups
@@ -62,12 +155,15 @@ class LocalStorage {
 
     async createGroup(data) {
         this._ensureLoaded();
+        const now = new Date().toISOString();
         const group = {
             id: this._data._nextGroupId++,
             name: data.name,
             description: data.description || null,
             color: data.color || '#3b82f6',
             icon: data.icon || '📁',
+            created_at: now,
+            updated_at: now,
         };
         this._data.groups.push(group);
         this._save();
@@ -78,13 +174,19 @@ class LocalStorage {
         this._ensureLoaded();
         const idx = this._data.groups.findIndex(g => g.id === id);
         if (idx === -1) throw new Error('Group not found');
-        this._data.groups[idx] = { ...this._data.groups[idx], ...data };
+        this._data.groups[idx] = {
+            ...this._data.groups[idx],
+            ...data,
+            updated_at: new Date().toISOString(),
+        };
         this._save();
         return this._data.groups[idx];
     }
 
     async deleteGroup(id) {
         this._ensureLoaded();
+        const group = this._data.groups.find(g => g.id === id);
+        if (group?.is_default) throw new Error('The Default Group cannot be deleted.');
         this._data.groups = this._data.groups.filter(g => g.id !== id);
         this._data.commands = this._data.commands.filter(c => c.group_id !== id);
         this._save();
@@ -120,7 +222,7 @@ class LocalStorage {
 
         if (params.tag) {
             const tags = Array.isArray(params.tag) ? params.tag : [params.tag];
-            cmds = cmds.filter(c => tags.every(t => (c.tags || []).includes(t)));
+            cmds = cmds.filter(c => tags.some(t => (c.tags || []).includes(t)));
         }
 
         if (params.sort === 'mostCopied') {
@@ -145,10 +247,15 @@ class LocalStorage {
 
     async createCommand(data) {
         this._ensureLoaded();
+        let groupId = data.group_id;
+        const groupIds = new Set(this._data.groups.map(g => g.id));
+        if (!groupId || !groupIds.has(groupId)) {
+            groupId = this._ensureDefaultGroup().id;
+        }
         const now = new Date().toISOString();
         const cmd = {
             id: this._data._nextCommandId++,
-            group_id: data.group_id,
+            group_id: groupId,
             title: data.title,
             command: data.command,
             description: data.description || null,
@@ -214,11 +321,15 @@ class LocalStorage {
         this._ensureLoaded();
         const idMap = {};
         for (const g of data.groups || []) {
-            const created = await this.createGroup(g);
-            idMap[g.source_id] = created.id;
+            if (g.is_default || g.name === 'Default Group') {
+                idMap[g.source_id] = this._ensureDefaultGroup().id;
+            } else {
+                const created = await this.createGroup(g);
+                idMap[g.source_id] = created.id;
+            }
         }
         for (const c of data.commands || []) {
-            await this.createCommand({ ...c, group_id: idMap[c.source_group_id] || c.group_id });
+            await this.createCommand({ ...c, group_id: idMap[c.source_group_id] || idMap[c.group_id] || c.group_id });
         }
         return { groups_created: (data.groups || []).length, commands_created: (data.commands || []).length };
     }
@@ -271,4 +382,4 @@ class LocalStorage {
     }
 }
 
-module.exports = { LocalStorage };
+module.exports = { LocalStorage, normalizeStore, emptyStore };
