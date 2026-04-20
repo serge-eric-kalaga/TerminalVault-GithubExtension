@@ -1,6 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-  <rect x="2" y="3" width="20" height="18" rx="2"/>
-  <polyline points="8 8 4.5 12 8 16"/>
-  <polyline points="16 8 19.5 12 16 16"/>
-  <line x1="10.5" y1="16" x2="13.5" y2="8"/>
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect x="16" y="16" width="224" height="224" rx="32" fill="#0F172A"/>
+
+  <!-- Inner glow -->
+  <rect x="24" y="24" width="208" height="208" rx="28" fill="url(#gradient)" stroke="#1E293B" stroke-width="2"/>
+
+  <!-- Vault body -->
+  <rect x="56" y="64" width="120" height="96" rx="16" fill="#111827" stroke="#334155" stroke-width="2"/>
+
+  <!-- Vault hinge -->
+  <rect x="52" y="80" width="8" height="24" rx="4" fill="#475569"/>
+  <rect x="52" y="112" width="8" height="24" rx="4" fill="#475569"/>
+
+  <!-- Terminal prompt -->
+  <text x="92" y="122" font-family="monospace" font-size="36" fill="#22C55E">&gt;</text>
+  <rect x="120" y="112" width="32" height="6" rx="3" fill="#22C55E"/>
+
+  <!-- Lock -->
+  <rect x="150" y="108" width="48" height="40" rx="8" fill="url(#lockGradient)"/>
+  <path d="M164 108V96a12 12 0 0 1 24 0v12" stroke="#38BDF8" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="174" cy="128" r="4" fill="#0F172A"/>
+
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="gradient" x1="24" y1="24" x2="232" y2="232" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0EA5E9"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+
+    <linearGradient id="lockGradient" x1="150" y1="108" x2="198" y2="148" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22C55E"/>
+      <stop offset="1" stop-color="#06B6D4"/>
+    </linearGradient>
+  </defs>
 </svg>

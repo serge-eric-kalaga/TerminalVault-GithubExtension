@@ -1,22 +1,26 @@
 {
-  "name": "terminal-vault",
-  "displayName": "Terminal Vault",
+  "name": "terminalvault-pro",
+  "publisher": "KALAGANonga-WendSergeEric",
+  "icon": "resources/logo.png",
+  "displayName": "Terminal Vault Pro",
   "description": "Store, organize and quickly access your terminal commands directly from VS Code",
   "version": "0.1.0",
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/serge-eric-kalaga/command-keeper"
+    "url": "https://github.com/serge-eric-kalaga/TerminalVault-GithubExtension"
   },
   "engines": {
     "vscode": "^1.116.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Snippets"
   ],
   "activationEvents": [
     "onStartupFinished"
   ],
-  "main": "./extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -194,6 +198,9 @@
     }
   },
   "scripts": {
+    "vscode:prepublish": "npm run bundle",
+    "bundle": "esbuild extension.js --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "bundle:watch": "npm run bundle -- --watch",
     "lint": "eslint .",
     "pretest": "npm run lint",
     "test": "vscode-test"
@@ -204,6 +211,7 @@
     "@types/vscode": "^1.116.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.28.0",
     "eslint": "^9.39.3"
   },
   "dependencies": {
