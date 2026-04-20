@@ -4,7 +4,7 @@
   "icon": "resources/logo.png",
   "displayName": "Terminal Vault Pro",
   "description": "Store, organize and quickly access your terminal commands directly from VS Code",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "repository": {
     "type": "git",
