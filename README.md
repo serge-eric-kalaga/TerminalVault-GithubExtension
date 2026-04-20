@@ -6,7 +6,7 @@ Terminal Vault helps you build your own command library without leaving your edi
 
 ## 🎬 Demo
 
-[![Terminal Vault Demo](https://img.youtube.com/vi/RKnO_oH0pak/maxresdefault.jpg)](https://youtu.be/RKnO_oH0pak)
+<video src="https://raw.githubusercontent.com/serge-eric-kalaga/TerminalVault-GithubExtension/main/images/demo.mp4" controls width="100%"></video>
 
 ---
 
